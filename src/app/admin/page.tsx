@@ -1,4 +1,5 @@
 import { criarClientAdmin } from '@/lib/supabase/admin';
+import { criarClientServidor } from '@/lib/supabase/server';
 import { Obra, EstatisticasDashboard } from '@/lib/types';
 import { formatarMoeda } from '@/lib/utils';
 import { DashboardCliente } from './DashboardCliente';
@@ -7,11 +8,21 @@ import { GridObras } from './GridObras';
 export const dynamic = 'force-dynamic';
 
 async function carregarObras() {
-  const supabase = criarClientAdmin();
-  const { data: obras, error } = await supabase
+  let supabase = criarClientAdmin();
+  let { data: obras, error } = await supabase
     .from('obras')
     .select('*')
     .order('created_at', { ascending: false });
+
+  if (error) {
+    supabase = criarClientServidor();
+    const result = await supabase
+      .from('obras')
+      .select('*')
+      .order('created_at', { ascending: false });
+    obras = result.data;
+    error = result.error;
+  }
 
   if (error) return { obras: null, error };
   return { obras: obras as Obra[], error: null };
@@ -38,7 +49,13 @@ export default async function DashboardAdmin() {
 
   if (error) {
     return (
-      <div className="text-atelie-terracotaClaro">Erro ao carregar obras: {error.message}</div>
+      <div className="text-atelie-terracotaClaro">
+        <p className="mb-2">Erro ao carregar obras: {error.message}</p>
+        <p className="text-xs text-atelie-textoMuted">
+          Verifique se as variáveis <code className="text-atelie-dourado">SUPABASE_SERVICE_ROLE_KEY</code> e{' '}
+          <code className="text-atelie-dourado">NEXT_PUBLIC_SUPABASE_URL</code> estão configuradas no Vercel Dashboard.
+        </p>
+      </div>
     );
   }
 
