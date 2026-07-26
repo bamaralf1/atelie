@@ -198,8 +198,24 @@ create policy "Leitura publica progresso" on storage.objects
   for select using (bucket_id = 'progresso');
 
 -- Habilitar Realtime nas tabelas usadas pela página do cliente
-alter publication supabase_realtime add table obras;
-alter publication supabase_realtime add table historico_status;
-alter publication supabase_realtime add table fotos_progresso;
-alter publication supabase_realtime add table materiais;
-alter publication supabase_realtime add table comentarios;
+-- (usa DO block para ignorar se já for membro da publicação)
+do $$ begin
+  alter publication supabase_realtime add table obras;
+exception when duplicate_object then null;
+end $$;
+do $$ begin
+  alter publication supabase_realtime add table historico_status;
+exception when duplicate_object then null;
+end $$;
+do $$ begin
+  alter publication supabase_realtime add table fotos_progresso;
+exception when duplicate_object then null;
+end $$;
+do $$ begin
+  alter publication supabase_realtime add table materiais;
+exception when duplicate_object then null;
+end $$;
+do $$ begin
+  alter publication supabase_realtime add table comentarios;
+exception when duplicate_object then null;
+end $$;
