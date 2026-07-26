@@ -28,7 +28,12 @@ const config: Config = {
       },
       boxShadow: {
         dourado: '0 0 0 1px rgba(198,161,91,0.35)',
-        'dourado-lg': '0 0 20px rgba(198,161,91,0.15), 0 0 0 1px rgba(198,161,91,0.35)',
+        'dourado-lg': '0 0 25px rgba(198,161,91,0.15), 0 0 0 1px rgba(198,161,91,0.3)',
+        'dourado-xl': '0 0 40px rgba(198,161,91,0.12), 0 0 0 1px rgba(198,161,91,0.25)',
+        glass: '0 8px 32px rgba(0,0,0,0.3)',
+      },
+      backgroundImage: {
+        'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
       },
       keyframes: {
         fadeInUp: {
@@ -51,6 +56,14 @@ const config: Config = {
           '0%': { backgroundPosition: '-200% 0' },
           '100%': { backgroundPosition: '200% 0' },
         },
+        goldPulse: {
+          '0%, 100%': { boxShadow: '0 0 20px rgba(198,161,91,0.15)' },
+          '50%': { boxShadow: '0 0 30px rgba(198,161,91,0.3)' },
+        },
+        float: {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(-4px)' },
+        },
         scaleIn: {
           '0%': { opacity: '0', transform: 'scale(0.95)' },
           '100%': { opacity: '1', transform: 'scale(1)' },
@@ -66,6 +79,8 @@ const config: Config = {
         slideUp: 'slideUp .5s ease-out both',
         pulseDot: 'pulseDot 2s ease-in-out infinite',
         shimmer: 'shimmer 2s linear infinite',
+        goldPulse: 'goldPulse 2s ease-in-out infinite',
+        float: 'float 3s ease-in-out infinite',
         scaleIn: 'scaleIn .3s ease-out both',
         slideInRight: 'slideInRight .4s ease-out both',
       },
