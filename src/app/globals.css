@@ -11,12 +11,10 @@ body {
     radial-gradient(ellipse at top, rgba(198, 161, 91, 0.05), transparent 60%);
 }
 
-/* Barra de progresso com preenchimento animado */
 .barra-progresso {
   transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Foco visível para acessibilidade em toda a aplicação */
 :focus-visible {
   outline: 2px solid theme('colors.atelie.dourado');
   outline-offset: 2px;
@@ -29,7 +27,54 @@ body {
   }
 }
 
-/* Scrollbar discreta, alinhada à paleta */
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-track { background: theme('colors.atelie.fundo'); }
 ::-webkit-scrollbar-thumb { background: theme('colors.atelie.borda'); border-radius: 8px; }
+::-webkit-scrollbar-thumb:hover { background: theme('colors.atelie.textoMuted'); }
+
+@layer components {
+  .card-premium {
+    @apply bg-atelie-superficie border border-atelie-borda rounded-lg
+      hover:border-atelie-dourado/40 transition-all duration-300;
+  }
+
+  .btn-dourado {
+    @apply bg-atelie-dourado text-atelie-fundo font-medium rounded-md
+      hover:bg-atelie-douradoClaro transition-colors disabled:opacity-50;
+  }
+
+  .btn-outline {
+    @apply border border-atelie-dourado/50 text-atelie-douradoClaro rounded-md
+      hover:bg-atelie-dourado/10 transition-colors disabled:opacity-50;
+  }
+
+  .input-atelie {
+    @apply w-full bg-atelie-fundo border border-atelie-borda rounded-md px-3 py-2
+      focus:outline-none focus:ring-2 focus:ring-atelie-dourado/60 focus:border-atelie-dourado/60
+      transition-all duration-200;
+  }
+
+  .gradient-dourado {
+    @apply bg-gradient-to-r from-atelie-dourado to-atelie-douradoClaro;
+  }
+
+  .gradient-terracota {
+    @apply bg-gradient-to-r from-atelie-terracota to-atelie-terracotaClaro;
+  }
+
+  .text-shimmer {
+    background: linear-gradient(90deg, theme('colors.atelie.textoMuted') 0%, theme('colors.atelie.texto') 50%, theme('colors.atelie.textoMuted') 100%);
+    background-size: 200% 100%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: shimmer 2s linear infinite;
+  }
+
+  .comparison-slider {
+    @apply relative overflow-hidden cursor-col-resize select-none;
+  }
+
+  .comparison-slider img {
+    @apply pointer-events-none select-none;
+  }
+}

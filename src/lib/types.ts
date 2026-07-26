@@ -1,5 +1,3 @@
-// Tipos compartilhados entre painel admin e página do cliente.
-
 export type StatusObra =
   | 'Esboço'
   | 'Imprimatura'
@@ -16,6 +14,15 @@ export const STATUS_OPCOES: StatusObra[] = [
   'Verniz final',
   'Concluída',
 ];
+
+export const STATUS_CORES = {
+  'Esboço': { bg: 'bg-zinc-500/20', text: 'text-zinc-300', border: 'border-zinc-500/40', dot: 'bg-zinc-400' },
+  'Imprimatura': { bg: 'bg-atelie-terracota/15', text: 'text-atelie-terracotaClaro', border: 'border-atelie-terracota/40', dot: 'bg-atelie-terracota' },
+  'Pintura em andamento': { bg: 'bg-atelie-dourado/15', text: 'text-atelie-douradoClaro', border: 'border-atelie-dourado/40', dot: 'bg-atelie-dourado' },
+  'Retoques finais': { bg: 'bg-atelie-dourado/20', text: 'text-atelie-douradoClaro', border: 'border-atelie-dourado/50', dot: 'bg-atelie-douradoClaro' },
+  'Verniz final': { bg: 'bg-atelie-terracota/20', text: 'text-atelie-terracotaClaro', border: 'border-atelie-terracota/50', dot: 'bg-atelie-terracotaClaro' },
+  'Concluída': { bg: 'bg-emerald-900/30', text: 'text-emerald-300', border: 'border-emerald-700/50', dot: 'bg-emerald-400' },
+} as const;
 
 export interface Obra {
   id: string;
@@ -63,4 +70,13 @@ export interface FotoProgresso {
   legenda: string | null;
   etapa: string | null;
   data_upload: string;
+}
+
+export interface EstatisticasDashboard {
+  total: number;
+  emAndamento: number;
+  concluidas: number;
+  receitaTotal: number;
+  custoTotal: number;
+  porStatus: { status: string; quantidade: number }[];
 }

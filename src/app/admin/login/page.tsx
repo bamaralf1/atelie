@@ -1,10 +1,6 @@
 import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
 
-/**
- * Login simples do painel admin: compara a senha enviada com ADMIN_PASSWORD
- * e grava um cookie de sessão. Ver src/middleware.ts para a proteção de rotas.
- */
 async function autenticar(formData: FormData) {
   'use server';
   const senha = formData.get('senha') as string;
@@ -16,7 +12,7 @@ async function autenticar(formData: FormData) {
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       path: '/',
-      maxAge: 60 * 60 * 24 * 7, // 7 dias
+      maxAge: 60 * 60 * 24 * 7,
     });
     redirect(redirectPara);
   }
@@ -31,37 +27,60 @@ export default function LoginAdminPage({
 }) {
   return (
     <div className="min-h-screen flex items-center justify-center bg-atelie-fundo px-4">
-      <form
-        action={autenticar}
-        className="w-full max-w-sm bg-atelie-superficie border border-atelie-borda rounded-lg p-8 animate-fadeInUp"
-      >
-        <h1 className="font-display text-3xl text-atelie-dourado mb-1">Ateliê</h1>
-        <p className="text-atelie-textoMuted text-sm mb-6">Acesso ao painel do artista</p>
+      <div className="w-full max-w-sm animate-fadeInUp">
+        {/* Logo */}
+        <div className="text-center mb-8">
+          <p className="font-display text-5xl text-atelie-dourado italic mb-2">Ateliê</p>
+          <p className="text-atelie-textoMuted text-sm">Acesso ao painel do artista</p>
+        </div>
 
-        <input type="hidden" name="redirect" value={searchParams.redirect || '/admin'} />
-
-        <label className="block text-xs uppercase tracking-wide text-atelie-textoMuted mb-2">
-          Senha
-        </label>
-        <input
-          type="password"
-          name="senha"
-          required
-          autoFocus
-          className="w-full bg-atelie-fundo border border-atelie-borda rounded-md px-3 py-2 text-atelie-texto focus:outline-none focus:ring-2 focus:ring-atelie-dourado/60 mb-4"
-        />
-
-        {searchParams.erro && (
-          <p className="text-atelie-terracotaClaro text-sm mb-4">Senha incorreta. Tente novamente.</p>
-        )}
-
-        <button
-          type="submit"
-          className="w-full bg-atelie-dourado text-atelie-fundo font-medium rounded-md py-2 hover:bg-atelie-douradoClaro transition-colors"
+        <form
+          action={autenticar}
+          className="bg-atelie-superficie border border-atelie-borda rounded-lg p-8"
         >
-          Entrar
-        </button>
-      </form>
+          <input type="hidden" name="redirect" value={searchParams.redirect || '/admin'} />
+
+          <label className="block text-xs uppercase tracking-wide text-atelie-textoMuted mb-2">
+            Senha de acesso
+          </label>
+          <div className="relative">
+            <input
+              type="password"
+              name="senha"
+              required
+              autoFocus
+              className="input-atelie pr-10"
+              placeholder="Digite sua senha"
+            />
+            <svg
+              className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-atelie-textoMuted"
+              fill="none" viewBox="0 0 24 24" stroke="currentColor"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+          </div>
+
+          {searchParams.erro && (
+            <div className="flex items-center gap-2 bg-atelie-terracota/10 border border-atelie-terracota/30 rounded-md px-3 py-2 mt-4">
+              <svg className="w-4 h-4 text-atelie-terracotaClaro shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <p className="text-atelie-terracotaClaro text-sm">Senha incorreta. Tente novamente.</p>
+            </div>
+          )}
+
+          <button
+            type="submit"
+            className="w-full btn-dourado py-2.5 mt-5"
+          >
+            Entrar
+          </button>
+
+          <p className="text-center text-[10px] text-atelie-textoMuted mt-4">
+            Acesso restrito ao artista
+          </p>
+        </form>
+      </div>
     </div>
   );
 }
