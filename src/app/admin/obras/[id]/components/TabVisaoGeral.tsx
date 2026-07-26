@@ -12,6 +12,15 @@ export function TabVisaoGeral({ obra }: { obra: Obra }) {
   const [confirmarStatus, setConfirmarStatus] = useState<StatusObra | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
 
+  useEffect(() => {
+    if (!confirmarStatus) return;
+    function handler(e: KeyboardEvent) {
+      if (e.key === 'Escape') setConfirmarStatus(null);
+    }
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [confirmarStatus]);
+
   const statusModificado = statusAtual !== obra.status_atual;
 
   useEffect(() => {
@@ -193,9 +202,16 @@ export function TabVisaoGeral({ obra }: { obra: Obra }) {
 
       {/* Modal de confirmação de status */}
       {confirmarStatus && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-atelie-superficie border border-atelie-borda rounded-lg p-6 max-w-sm mx-4 shadow-dourado-lg animate-scaleIn">
-            <h3 className="font-display text-lg mb-2">Alterar status</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fadeIn" onClick={() => setConfirmarStatus(null)}>
+          <div className="bg-atelie-superficie border border-atelie-borda rounded-lg p-6 max-w-sm mx-4 shadow-dourado-lg animate-scaleIn" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="font-display text-lg">Alterar status</h3>
+              <button onClick={() => setConfirmarStatus(null)} className="text-atelie-textoMuted hover:text-atelie-texto transition-colors" aria-label="Fechar">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
             <p className="text-sm text-atelie-textoMuted mb-4">
               Mudar de <strong>{obra.status_atual}</strong> para <strong>{confirmarStatus}</strong>?
               <br />Isso será registrado na linha do tempo do cliente.
