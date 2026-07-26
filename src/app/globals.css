@@ -1,0 +1,35 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  border-color: theme('colors.atelie.borda');
+}
+
+body {
+  background-image:
+    radial-gradient(ellipse at top, rgba(198, 161, 91, 0.05), transparent 60%);
+}
+
+/* Barra de progresso com preenchimento animado */
+.barra-progresso {
+  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Foco visível para acessibilidade em toda a aplicação */
+:focus-visible {
+  outline: 2px solid theme('colors.atelie.dourado');
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Scrollbar discreta, alinhada à paleta */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: theme('colors.atelie.fundo'); }
+::-webkit-scrollbar-thumb { background: theme('colors.atelie.borda'); border-radius: 8px; }
