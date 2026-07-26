@@ -29,181 +29,169 @@ async function carregarObras() {
 }
 
 function calcularEstatisticas(obras: Obra[]): EstatisticasDashboard {
-  const total = obras.length;
-  const emAndamento = obras.filter((o) => o.status_atual !== 'Concluída').length;
-  const concluidas = obras.filter((o) => o.status_atual === 'Concluída').length;
-  const receitaTotal = obras.reduce((s, o) => s + o.orcamento_total, 0);
-  const custoTotal = obras.reduce((s, o) => s + o.custo_materiais, 0);
+  return {
+    total: obras.length,
+    emAndamento: obras.filter((o) => o.status_atual !== 'Concluída').length,
+    concluidas: obras.filter((o) => o.status_atual === 'Concluída').length,
+    receitaTotal: obras.reduce((s, o) => s + o.orcamento_total, 0),
+    custoTotal: obras.reduce((s, o) => s + o.custo_materiais, 0),
+    porStatus: Array.from(
+      obras.reduce((map, o) => map.set(o.status_atual, (map.get(o.status_atual) || 0) + 1), new Map<string, number>())
+    ).map(([status, quantidade]) => ({ status, quantidade })),
+  };
+}
 
-  const porStatusMap = new Map<string, number>();
-  for (const o of obras) {
-    porStatusMap.set(o.status_atual, (porStatusMap.get(o.status_atual) || 0) + 1);
-  }
-  const porStatus = Array.from(porStatusMap.entries()).map(([status, quantidade]) => ({ status, quantidade }));
+function ErrorState({ message }: { message: string }) {
+  return (
+    <div className="min-h-[60vh] flex items-center justify-center">
+      <div className="max-w-md text-center space-y-4">
+        <div className="w-16 h-16 mx-auto rounded-full bg-atelie-terracota/20 flex items-center justify-center">
+          <svg className="w-8 h-8 text-atelie-terracotaClaro" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01" />
+          </svg>
+        </div>
+        <h2 className="font-display text-xl text-atelie-texto">Erro de conexão</h2>
+        <p className="text-atelie-textoMuted text-sm">{message}</p>
+        <div className="bg-black/30 rounded-lg p-4 text-left text-xs text-atelie-textoMuted space-y-1.5">
+          <p>1. Vá em Vercel → Settings → Environment Variables</p>
+          <p>2. Verifique <span className="text-atelie-dourado">SUPABASE_SERVICE_ROLE_KEY</span> e <span className="text-atelie-dourado">NEXT_PUBLIC_SUPABASE_URL</span></p>
+        </div>
+        <a href="/admin" className="btn-outline px-4 py-2 text-sm inline-block">Tentar novamente</a>
+      </div>
+    </div>
+  );
+}
 
-  return { total, emAndamento, concluidas, receitaTotal, custoTotal, porStatus };
+function EmptyState() {
+  return (
+    <div className="border border-dashed border-atelie-borda rounded-xl py-20 text-center">
+      <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-atelie-dourado/10 flex items-center justify-center">
+        <svg className="w-8 h-8 text-atelie-dourado/60" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+        </svg>
+      </div>
+      <p className="font-display text-xl text-atelie-texto mb-1">Nenhuma obra cadastrada</p>
+      <p className="text-atelie-textoMuted text-sm mb-6">Crie sua primeira obra para começar.</p>
+      <a href="/admin/nova-obra" className="btn-dourado px-6 py-2.5 inline-flex items-center gap-2">
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
+        </svg>
+        Cadastrar primeira obra
+      </a>
+    </div>
+  );
 }
 
 export default async function DashboardAdmin() {
   const { obras, error } = await carregarObras();
 
-  if (error) {
-    return (
-      <div className="text-atelie-terracotaClaro">
-        <p className="mb-2">Erro ao carregar obras: {error.message}</p>
-        <p className="text-xs text-atelie-textoMuted">
-          Verifique se as variáveis <code className="text-atelie-dourado">SUPABASE_SERVICE_ROLE_KEY</code> e{' '}
-          <code className="text-atelie-dourado">NEXT_PUBLIC_SUPABASE_URL</code> estão configuradas no Vercel Dashboard.
-        </p>
-      </div>
-    );
-  }
+  if (error) return <ErrorState message={error.message} />;
+  if (!obras || obras.length === 0) return <EmptyState />;
 
-  const stats = obras ? calcularEstatisticas(obras) : null;
-  const margemMedia = stats && stats.receitaTotal > 0
-    ? ((stats.receitaTotal - stats.custoTotal) / stats.receitaTotal) * 100
-    : 0;
+  const stats = calcularEstatisticas(obras);
+  const margemMedia = stats.receitaTotal > 0
+    ? ((stats.receitaTotal - stats.custoTotal) / stats.receitaTotal * 100).toFixed(1)
+    : '0';
+
+  const obrasComPrazo = obras
+    .filter((o) => o.estimativa_conclusao && o.status_atual !== 'Concluída')
+    .sort((a, b) => new Date(a.estimativa_conclusao!).getTime() - new Date(b.estimativa_conclusao!).getTime());
 
   return (
-    <div>
-        {/* Cabeçalho */}
-        <div className="flex items-end justify-between mb-8">
-          <div>
-            <h1 className="font-display text-3xl mb-1">Suas obras</h1>
-            <p className="text-atelie-textoMuted text-sm">
-              {obras?.length ?? 0} obra{(obras?.length ?? 0) !== 1 ? 's' : ''} cadastrada{(obras?.length ?? 0) !== 1 ? 's' : ''}
-              <span className="mx-2">·</span>
-              <kbd className="px-1.5 py-0.5 bg-atelie-superficie2 border border-atelie-borda rounded text-[10px] font-mono text-atelie-textoMuted">?</kbd> atalhos
-            </p>
+    <div className="space-y-8">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="font-display text-3xl text-atelie-texto">Suas obras</h1>
+          <p className="text-atelie-textoMuted text-sm mt-1">
+            {stats.total} obra{stats.total !== 1 ? 's' : ''} · {stats.emAndamento} em andamento · {stats.concluidas} concluída{stats.concluidas !== 1 ? 's' : ''}
+          </p>
+        </div>
+        <a href="/admin/nova-obra" className="btn-dourado px-5 py-2.5 text-sm inline-flex items-center gap-2 shrink-0">
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
+          </svg>
+          Nova obra
+        </a>
+      </div>
+
+      {/* Stats row */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-atelie-superficie border border-atelie-borda rounded-xl p-5">
+          <p className="text-xs uppercase tracking-wide text-atelie-textoMuted mb-1">Total</p>
+          <p className="font-display text-2xl text-atelie-texto">{stats.total}</p>
+          <p className="text-xs text-atelie-textoMuted mt-1">{stats.emAndamento} andamento · {stats.concluidas} concluídas</p>
+        </div>
+        <div className="bg-atelie-superficie border border-atelie-borda rounded-xl p-5">
+          <p className="text-xs uppercase tracking-wide text-atelie-textoMuted mb-1">Andamento</p>
+          <p className="font-display text-2xl text-atelie-douradoClaro">{stats.emAndamento}</p>
+          <div className="mt-2 w-full h-1.5 bg-atelie-superficie2 rounded-full overflow-hidden">
+            <div className="h-full rounded-full bg-gradient-to-r from-atelie-dourado to-atelie-douradoClaro barra-progresso" style={{ width: `${(stats.emAndamento / stats.total) * 100}%` }} />
           </div>
         </div>
-
-        {/* Cards de estatísticas */}
-        {stats && obras && obras.length > 0 && (
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <div className="bg-atelie-superficie border border-atelie-borda rounded-lg p-5 animate-fadeInUp relative overflow-hidden group">
-              <div className="absolute top-0 right-0 w-20 h-20 bg-atelie-dourado/5 rounded-bl-full transition-all group-hover:bg-atelie-dourado/10" />
-              <p className="text-xs uppercase tracking-wide text-atelie-textoMuted mb-1">Total</p>
-              <p className="font-display text-2xl text-atelie-texto">{stats.total}</p>
-              <p className="text-xs text-atelie-textoMuted mt-1">
-                {stats.emAndamento} em andamento · {stats.concluidas} concluídas
-              </p>
-            </div>
-            <div className="bg-atelie-superficie border border-atelie-borda rounded-lg p-5 animate-fadeInUp [animation-delay:100ms] relative overflow-hidden group">
-              <div className="absolute top-0 right-0 w-20 h-20 bg-atelie-dourado/5 rounded-bl-full transition-all group-hover:bg-atelie-dourado/10" />
-              <p className="text-xs uppercase tracking-wide text-atelie-textoMuted mb-1">Em andamento</p>
-              <p className="font-display text-2xl text-atelie-douradoClaro">{stats.emAndamento}</p>
-              <div className="mt-2 w-full h-1.5 bg-atelie-superficie2 rounded-full overflow-hidden">
-                <div
-                  className="h-full rounded-full bg-gradient-to-r from-atelie-dourado to-atelie-douradoClaro barra-progresso"
-                  style={{ width: `${stats.total > 0 ? (stats.emAndamento / stats.total) * 100 : 0}%` }}
-                />
-              </div>
-            </div>
-            <div className="bg-atelie-superficie border border-atelie-borda rounded-lg p-5 animate-fadeInUp [animation-delay:200ms] relative overflow-hidden group">
-              <div className="absolute top-0 right-0 w-20 h-20 bg-emerald-500/5 rounded-bl-full transition-all group-hover:bg-emerald-500/10" />
-              <p className="text-xs uppercase tracking-wide text-atelie-textoMuted mb-1">Concluídas</p>
-              <p className="font-display text-2xl text-emerald-300">{stats.concluidas}</p>
-              <div className="mt-2 w-full h-1.5 bg-atelie-superficie2 rounded-full overflow-hidden">
-                <div
-                  className="h-full rounded-full bg-emerald-500 barra-progresso"
-                  style={{ width: `${stats.total > 0 ? (stats.concluidas / stats.total) * 100 : 0}%` }}
-                />
-              </div>
-            </div>
-            <div className="bg-atelie-superficie border border-atelie-borda rounded-lg p-5 animate-fadeInUp [animation-delay:300ms] relative overflow-hidden group">
-              <div className="absolute top-0 right-0 w-20 h-20 bg-atelie-dourado/5 rounded-bl-full transition-all group-hover:bg-atelie-dourado/10" />
-              <p className="text-xs uppercase tracking-wide text-atelie-textoMuted mb-1">Receita total</p>
-              <p className="font-display text-2xl text-atelie-douradoClaro">{formatarMoeda(stats.receitaTotal)}</p>
-              <p className="text-xs text-atelie-textoMuted mt-1">
-                Margem média: {margemMedia.toFixed(0)}%
-              </p>
-            </div>
+        <div className="bg-atelie-superficie border border-atelie-borda rounded-xl p-5">
+          <p className="text-xs uppercase tracking-wide text-atelie-textoMuted mb-1">Concluídas</p>
+          <p className="font-display text-2xl text-emerald-300">{stats.concluidas}</p>
+          <div className="mt-2 w-full h-1.5 bg-atelie-superficie2 rounded-full overflow-hidden">
+            <div className="h-full rounded-full bg-emerald-500 barra-progresso" style={{ width: `${(stats.concluidas / stats.total) * 100}%` }} />
           </div>
-        )}
-
-        {/* Dashboard interativo com gráficos */}
-        {obras && obras.length > 0 && (
-          <DashboardCliente obras={obras} stats={stats!} />
-        )}
-
-        {/* Widgets: Próximos prazos + Atividades recentes */}
-        {obras && obras.length > 0 && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-8">
-            {/* Próximos prazos */}
-            <div className="bg-atelie-superficie border border-atelie-borda rounded-lg p-5 animate-fadeInUp">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-1 h-4 rounded-full bg-gradient-to-b from-atelie-dourado to-atelie-douradoClaro" />
-                <p className="text-xs uppercase tracking-wide text-atelie-textoMuted font-semibold">Próximos prazos</p>
-              </div>
-              <div className="space-y-2">
-                {obras
-                  .filter((o) => o.estimativa_conclusao && o.status_atual !== 'Concluída')
-                  .sort((a, b) => new Date(a.estimativa_conclusao!).getTime() - new Date(b.estimativa_conclusao!).getTime())
-                  .slice(0, 5)
-                  .map((obra) => {
-                    const dias = formatarDiasRestantes(obra.estimativa_conclusao);
-                    return (
-                      <a
-                        key={obra.id}
-                        href={`/admin/obras/${obra.id}`}
-                        className="flex items-center justify-between px-3 py-2.5 rounded-md hover:bg-atelie-superficie2/50 transition-colors group"
-                      >
-                        <div className="min-w-0 flex-1">
-                          <p className="text-sm text-atelie-texto truncate group-hover:text-atelie-douradoClaro transition-colors">{obra.titulo}</p>
-                          <p className="text-[11px] text-atelie-textoMuted truncate">{obra.cliente_nome}</p>
-                        </div>
-                        <span className={`text-xs shrink-0 ml-3 ${dias?.classe ?? 'text-atelie-textoMuted'}`}>
-                          {dias?.texto ?? formatarData(obra.estimativa_conclusao)}
-                        </span>
-                      </a>
-                    );
-                  })}
-                {obras.filter((o) => o.estimativa_conclusao && o.status_atual !== 'Concluída').length === 0 && (
-                  <p className="text-sm text-atelie-textoMuted text-center py-4">Nenhum prazo definido.</p>
-                )}
-              </div>
-            </div>
-
-            {/* Atividades recentes */}
-            <div className="bg-atelie-superficie border border-atelie-borda rounded-lg p-5 animate-fadeInUp [animation-delay:100ms]">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-1 h-4 rounded-full bg-gradient-to-b from-atelie-terracota to-atelie-terracotaClaro" />
-                <p className="text-xs uppercase tracking-wide text-atelie-textoMuted font-semibold">Atualizadas recentemente</p>
-              </div>
-              <div className="space-y-2">
-                {obras
-                  .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
-                  .slice(0, 5)
-                  .map((obra) => (
-                    <a
-                      key={obra.id}
-                      href={`/admin/obras/${obra.id}`}
-                      className="flex items-center justify-between px-3 py-2.5 rounded-md hover:bg-atelie-superficie2/50 transition-colors group"
-                    >
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm text-atelie-texto truncate group-hover:text-atelie-douradoClaro transition-colors">{obra.titulo}</p>
-                        <p className="text-[11px] text-atelie-textoMuted">{obra.cliente_nome} · {obra.status_atual}</p>
-                      </div>
-                      <span className="text-[11px] text-atelie-textoMuted shrink-0 ml-3">{tempoRelativo(obra.updated_at)}</span>
-                    </a>
-                  ))}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Grid de obras com filtro integrado */}
-        {!obras || obras.length === 0 ? (
-          <div className="border border-dashed border-atelie-borda rounded-lg py-16 text-center">
-            <p className="text-atelie-textoMuted mb-4">Nenhuma obra cadastrada ainda.</p>
-            <a href="/admin/nova-obra" className="inline-block btn-dourado px-5 py-2.5">
-              Cadastrar primeira obra
-            </a>
-          </div>
-        ) : (
-          <GridObras obras={obras as Obra[]} />
-        )}
+        </div>
+        <div className="bg-atelie-superficie border border-atelie-borda rounded-xl p-5">
+          <p className="text-xs uppercase tracking-wide text-atelie-textoMuted mb-1">Receita</p>
+          <p className="font-display text-2xl text-atelie-douradoClaro">{formatarMoeda(stats.receitaTotal)}</p>
+          <p className="text-xs text-atelie-textoMuted mt-1">Margem: <span className={+margemMedia >= 50 ? 'text-emerald-300' : +margemMedia >= 30 ? 'text-atelie-douradoClaro' : 'text-atelie-terracotaClaro'}>{margemMedia}%</span></p>
+        </div>
       </div>
+
+      {/* Dashboard com gráficos + grade/kanban */}
+      <DashboardCliente obras={obras} stats={stats} />
+
+      {/* Widgets */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        {/* Prazos */}
+        <div className="bg-atelie-superficie border border-atelie-borda rounded-xl p-5">
+          <p className="text-xs uppercase tracking-wide text-atelie-textoMuted font-semibold mb-4">Próximos prazos</p>
+          {obrasComPrazo.length > 0 ? (
+            <div className="space-y-1">
+              {obrasComPrazo.slice(0, 5).map((obra) => {
+                const dias = formatarDiasRestantes(obra.estimativa_conclusao);
+                return (
+                  <a key={obra.id} href={`/admin/obras/${obra.id}`}
+                    className="flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-atelie-superficie2/50 transition-colors group">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm text-atelie-texto truncate group-hover:text-atelie-douradoClaro">{obra.titulo}</p>
+                      <p className="text-xs text-atelie-textoMuted truncate">{obra.cliente_nome}</p>
+                    </div>
+                    <span className={`text-xs shrink-0 ml-3 ${dias?.classe}`}>{dias?.texto ?? formatarData(obra.estimativa_conclusao)}</span>
+                  </a>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="text-sm text-atelie-textoMuted py-8 text-center">Nenhum prazo definido.</p>
+          )}
+        </div>
+
+        {/* Atividades */}
+        <div className="bg-atelie-superficie border border-atelie-borda rounded-xl p-5">
+          <p className="text-xs uppercase tracking-wide text-atelie-textoMuted font-semibold mb-4">Atualizações recentes</p>
+          <div className="space-y-1">
+            {[...obras].sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()).slice(0, 5).map((obra) => (
+              <a key={obra.id} href={`/admin/obras/${obra.id}`}
+                className="flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-atelie-superficie2/50 transition-colors group">
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm text-atelie-texto truncate group-hover:text-atelie-douradoClaro">{obra.titulo}</p>
+                  <p className="text-xs text-atelie-textoMuted">{obra.cliente_nome} · {obra.status_atual}</p>
+                </div>
+                <span className="text-xs text-atelie-textoMuted shrink-0 ml-3">{tempoRelativo(obra.updated_at)}</span>
+              </a>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Grid */}
+      <GridObras obras={obras} />
+    </div>
   );
 }

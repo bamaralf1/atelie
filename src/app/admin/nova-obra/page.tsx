@@ -14,13 +14,18 @@ export default function NovaObraPage() {
   async function handleSubmit(formData: FormData) {
     setEnviando(true);
     setErro(null);
-    const resultado = await criarObraAction(formData);
-    if (resultado?.erro) {
-      setErro(resultado.erro);
+    try {
+      const resultado = await criarObraAction(formData);
+      if (resultado?.erro) {
+        setErro(resultado.erro);
+        setEnviando(false);
+        return;
+      }
+      router.push(`/admin/obras/${resultado.id}`);
+    } catch (err) {
+      setErro(err instanceof Error ? err.message : 'Erro inesperado ao salvar.');
       setEnviando(false);
-      return;
     }
-    router.push(`/admin/obras/${resultado.id}`);
   }
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
