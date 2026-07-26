@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { FotoProgresso } from '@/lib/types';
 import { formatarDataHora } from '@/lib/utils';
 import { enviarFotoProgressoAction, removerFotoAction } from '../actions';
+import { ImageCropper } from '@/components/ui/ImageCropper';
 
 export function TabFotos({ obraId, fotosIniciais }: { obraId: string; fotosIniciais: FotoProgresso[] }) {
   const [fotos, setFotos] = useState(fotosIniciais);
@@ -13,6 +14,8 @@ export function TabFotos({ obraId, fotosIniciais }: { obraId: string; fotosInici
   const [arrastando, setArrastando] = useState(false);
   const [selecionadas, setSelecionadas] = useState<Set<string>>(new Set());
   const [comparando, setComparando] = useState<string | null>(null);
+  const [cropAberto, setCropAberto] = useState(false);
+  const [arquivoCrop, setArquivoCrop] = useState<File | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const handleDrag = useCallback((e: React.DragEvent) => {
@@ -28,19 +31,29 @@ export function TabFotos({ obraId, fotosIniciais }: { obraId: string; fotosInici
     setArrastando(false);
     const arquivos = Array.from(e.dataTransfer.files).filter((f) => f.type.startsWith('image/'));
     if (arquivos.length > 0) {
-      // Usa o primeiro arquivo
-      const dataTransfer = new DataTransfer();
-      dataTransfer.items.add(arquivos[0]);
-      if (fileRef.current) {
-        fileRef.current.files = dataTransfer.files;
-        fileRef.current.form?.requestSubmit();
-      }
+      setArquivoCrop(arquivos[0]);
+      setCropAberto(true);
     }
   }, []);
 
-  async function handleSubmit(formData: FormData) {
+  function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file) {
+      setArquivoCrop(file);
+      setCropAberto(true);
+    }
+  }
+
+  async function handleUploadCropped(arquivoRecortado: File) {
+    setCropAberto(false);
     setEnviando(true);
     setErro(null);
+
+    const formData = new FormData();
+    formData.set('foto', arquivoRecortado);
+    formData.set('legenda', (document.querySelector('[name="legenda"]') as HTMLInputElement)?.value ?? '');
+    formData.set('etapa', (document.querySelector('[name="etapa"]') as HTMLInputElement)?.value ?? '');
+
     const resultado = await enviarFotoProgressoAction(obraId, formData);
     if (resultado?.erro) {
       setErro(resultado.erro);
@@ -72,11 +85,16 @@ export function TabFotos({ obraId, fotosIniciais }: { obraId: string; fotosInici
     });
   }
 
-  const fotosOrdenadas = [...fotos].reverse();
-
   return (
     <div className="max-w-3xl space-y-6">
-      {/* Zona de upload com drag & drop */}
+      <ImageCropper
+        aberto={cropAberto}
+        arquivo={arquivoCrop}
+        onConfirmar={handleUploadCropped}
+        onFechar={() => { setCropAberto(false); setArquivoCrop(null); }}
+      />
+
+      {/* Zona de upload */}
       <div
         onDragEnter={handleDrag}
         onDragLeave={handleDrag}
@@ -84,17 +102,20 @@ export function TabFotos({ obraId, fotosIniciais }: { obraId: string; fotosInici
         onDrop={handleDrop}
         className={`relative border-2 border-dashed rounded-lg p-6 text-center transition-all duration-200 ${
           arrastando
-            ? 'border-atelie-dourado bg-atelie-dourado/5'
+            ? 'border-atelie-dourado bg-atelie-dourado/5 shadow-dourado-lg'
             : 'border-atelie-borda hover:border-atelie-dourado/40'
         }`}
       >
-        <form action={handleSubmit} className="space-y-3">
+        <div className="space-y-3">
           <div className="flex flex-col items-center gap-2">
-            <svg className={`w-8 h-8 ${arrastando ? 'text-atelie-douradoClaro' : 'text-atelie-textoMuted'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className={`w-10 h-10 ${arrastando ? 'text-atelie-douradoClaro' : 'text-atelie-textoMuted'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
             <p className="text-sm text-atelie-textoMuted">
               {arrastando ? 'Solte a foto aqui' : 'Arraste uma foto ou clique para selecionar'}
+            </p>
+            <p className="text-[10px] text-atelie-textoMuted">
+              PNG, JPG ou WebP · A foto será ajustada antes do upload
             </p>
           </div>
 
@@ -103,8 +124,7 @@ export function TabFotos({ obraId, fotosIniciais }: { obraId: string; fotosInici
             type="file"
             name="foto"
             accept="image/*"
-            required
-            onChange={() => fileRef.current?.form?.requestSubmit()}
+            onChange={handleFileSelect}
             className="hidden"
           />
           <button
@@ -118,13 +138,10 @@ export function TabFotos({ obraId, fotosIniciais }: { obraId: string; fotosInici
 
           <div className="grid grid-cols-2 gap-3 max-w-md mx-auto">
             <input name="legenda" placeholder="Legenda" className="input-atelie text-sm" />
-            <input name="etapa" placeholder="Etapa (ex: Base de cores)" className="input-atelie text-sm" />
+            <input name="etapa" placeholder="Etapa" className="input-atelie text-sm" />
           </div>
-        </form>
+        </div>
         {erro && <p className="text-atelie-terracotaClaro text-sm mt-3">{erro}</p>}
-        <p className="text-[10px] text-atelie-textoMuted mt-2">
-          A última foto enviada se torna a imagem de destaque da obra
-        </p>
       </div>
 
       {/* Barra de ações em massa */}
@@ -150,10 +167,9 @@ export function TabFotos({ obraId, fotosIniciais }: { obraId: string; fotosInici
               className={`group relative bg-atelie-superficie border rounded-lg overflow-hidden transition-all duration-200 ${
                 selecionada
                   ? 'border-atelie-dourado ring-1 ring-atelie-dourado'
-                  : 'border-atelie-borda hover:border-atelie-dourado/40'
+                  : 'border-atelie-borda hover:border-atelie-dourado/40 hover:shadow-dourado'
               }`}
             >
-              {/* Checkbox de seleção */}
               <div className="absolute top-2 left-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
                 <input
                   type="checkbox"
@@ -165,7 +181,6 @@ export function TabFotos({ obraId, fotosIniciais }: { obraId: string; fotosInici
 
               <div className="relative h-36">
                 <Image src={foto.url_foto} alt={foto.legenda ?? 'Foto'} fill className="object-cover" />
-                {/* Botão de comparar */}
                 <button
                   onClick={() => setComparando(comparando === foto.id ? null : foto.id)}
                   className="absolute bottom-2 right-2 bg-black/60 backdrop-blur-sm text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity"
@@ -189,7 +204,7 @@ export function TabFotos({ obraId, fotosIniciais }: { obraId: string; fotosInici
         )}
       </div>
 
-      {/* Comparação side-by-side */}
+      {/* Comparação */}
       {comparando && fotos.length > 1 && (
         <div className="bg-atelie-superficie border border-atelie-borda rounded-lg p-4 animate-fadeIn">
           <p className="text-xs uppercase tracking-wide text-atelie-textoMuted mb-3">Comparação: antes / depois</p>

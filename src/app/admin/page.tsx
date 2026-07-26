@@ -3,6 +3,8 @@ import { ObraCard } from '@/components/admin/ObraCard';
 import { Obra, EstatisticasDashboard } from '@/lib/types';
 import { FiltroObras } from './FiltroObras';
 import { formatarMoeda } from '@/lib/utils';
+import { DashboardCliente } from './DashboardCliente';
+import { PaletaAtalhos } from '@/components/ui/AtalhosTeclado';
 
 export const dynamic = 'force-dynamic';
 
@@ -48,128 +50,95 @@ export default async function DashboardAdmin() {
     : 0;
 
   return (
-    <div>
-      {/* Cabeçalho */}
-      <div className="flex items-end justify-between mb-8">
-        <div>
-          <h1 className="font-display text-3xl mb-1">Suas obras</h1>
-          <p className="text-atelie-textoMuted text-sm">
-            {obras?.length ?? 0} obra{(obras?.length ?? 0) !== 1 ? 's' : ''} cadastrada{(obras?.length ?? 0) !== 1 ? 's' : ''}
-          </p>
-        </div>
-      </div>
-
-      {/* Cards de estatísticas */}
-      {stats && obras && obras.length > 0 && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <div className="bg-atelie-superficie border border-atelie-borda rounded-lg p-5 animate-fadeInUp">
-            <p className="text-xs uppercase tracking-wide text-atelie-textoMuted mb-1">Total</p>
-            <p className="font-display text-2xl text-atelie-texto">{stats.total}</p>
-            <p className="text-xs text-atelie-textoMuted mt-1">
-              {stats.emAndamento} em andamento · {stats.concluidas} concluídas
-            </p>
-          </div>
-          <div className="bg-atelie-superficie border border-atelie-borda rounded-lg p-5 animate-fadeInUp [animation-delay:100ms]">
-            <p className="text-xs uppercase tracking-wide text-atelie-textoMuted mb-1">Em andamento</p>
-            <p className="font-display text-2xl text-atelie-douradoClaro">{stats.emAndamento}</p>
-            <div className="mt-2 w-full h-1.5 bg-atelie-superficie2 rounded-full overflow-hidden">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-atelie-dourado to-atelie-douradoClaro barra-progresso"
-                style={{ width: `${stats.total > 0 ? (stats.emAndamento / stats.total) * 100 : 0}%` }}
-              />
-            </div>
-          </div>
-          <div className="bg-atelie-superficie border border-atelie-borda rounded-lg p-5 animate-fadeInUp [animation-delay:200ms]">
-            <p className="text-xs uppercase tracking-wide text-atelie-textoMuted mb-1">Concluídas</p>
-            <p className="font-display text-2xl text-emerald-300">{stats.concluidas}</p>
-            <div className="mt-2 w-full h-1.5 bg-atelie-superficie2 rounded-full overflow-hidden">
-              <div
-                className="h-full rounded-full bg-emerald-500 barra-progresso"
-                style={{ width: `${stats.total > 0 ? (stats.concluidas / stats.total) * 100 : 0}%` }}
-              />
-            </div>
-          </div>
-          <div className="bg-atelie-superficie border border-atelie-borda rounded-lg p-5 animate-fadeInUp [animation-delay:300ms]">
-            <p className="text-xs uppercase tracking-wide text-atelie-textoMuted mb-1">Receita total</p>
-            <p className="font-display text-2xl text-atelie-douradoClaro">{formatarMoeda(stats.receitaTotal)}</p>
-            <p className="text-xs text-atelie-textoMuted mt-1">
-              Margem média: {margemMedia.toFixed(0)}%
+    <>
+      <PaletaAtalhos />
+      <div>
+        {/* Cabeçalho */}
+        <div className="flex items-end justify-between mb-8">
+          <div>
+            <h1 className="font-display text-3xl mb-1">Suas obras</h1>
+            <p className="text-atelie-textoMuted text-sm">
+              {obras?.length ?? 0} obra{(obras?.length ?? 0) !== 1 ? 's' : ''} cadastrada{(obras?.length ?? 0) !== 1 ? 's' : ''}
+              <span className="mx-2">·</span>
+              <kbd className="px-1.5 py-0.5 bg-atelie-superficie2 border border-atelie-borda rounded text-[10px] font-mono text-atelie-textoMuted">?</kbd> atalhos
             </p>
           </div>
         </div>
-      )}
 
-      {/* Distribuição por status */}
-      {stats && stats.porStatus.length > 1 && (
-        <div className="bg-atelie-superficie border border-atelie-borda rounded-lg p-5 mb-8 animate-fadeInUp [animation-delay:350ms]">
-          <p className="text-xs uppercase tracking-wide text-atelie-textoMuted mb-3">Distribuição por status</p>
-          <div className="flex h-2 rounded-full overflow-hidden bg-atelie-superficie2">
-            {(() => {
-              const cores: Record<string, string> = {
-                'Esboço': 'bg-zinc-500',
-                'Imprimatura': 'bg-atelie-terracota',
-                'Pintura em andamento': 'bg-atelie-dourado',
-                'Retoques finais': 'bg-atelie-douradoClaro',
-                'Verniz final': 'bg-atelie-terracotaClaro',
-                'Concluída': 'bg-emerald-500',
-              };
-              return stats.porStatus.map((s) => (
+        {/* Cards de estatísticas */}
+        {stats && obras && obras.length > 0 && (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div className="bg-atelie-superficie border border-atelie-borda rounded-lg p-5 animate-fadeInUp relative overflow-hidden group">
+              <div className="absolute top-0 right-0 w-20 h-20 bg-atelie-dourado/5 rounded-bl-full transition-all group-hover:bg-atelie-dourado/10" />
+              <p className="text-xs uppercase tracking-wide text-atelie-textoMuted mb-1">Total</p>
+              <p className="font-display text-2xl text-atelie-texto">{stats.total}</p>
+              <p className="text-xs text-atelie-textoMuted mt-1">
+                {stats.emAndamento} em andamento · {stats.concluidas} concluídas
+              </p>
+            </div>
+            <div className="bg-atelie-superficie border border-atelie-borda rounded-lg p-5 animate-fadeInUp [animation-delay:100ms] relative overflow-hidden group">
+              <div className="absolute top-0 right-0 w-20 h-20 bg-atelie-dourado/5 rounded-bl-full transition-all group-hover:bg-atelie-dourado/10" />
+              <p className="text-xs uppercase tracking-wide text-atelie-textoMuted mb-1">Em andamento</p>
+              <p className="font-display text-2xl text-atelie-douradoClaro">{stats.emAndamento}</p>
+              <div className="mt-2 w-full h-1.5 bg-atelie-superficie2 rounded-full overflow-hidden">
                 <div
-                  key={s.status}
-                  className={`${cores[s.status] ?? 'bg-zinc-500'} barra-progresso`}
-                  style={{ width: `${(s.quantidade / stats.total) * 100}%` }}
-                  title={`${s.status}: ${s.quantidade}`}
+                  className="h-full rounded-full bg-gradient-to-r from-atelie-dourado to-atelie-douradoClaro barra-progresso"
+                  style={{ width: `${stats.total > 0 ? (stats.emAndamento / stats.total) * 100 : 0}%` }}
                 />
-              ));
-            })()}
+              </div>
+            </div>
+            <div className="bg-atelie-superficie border border-atelie-borda rounded-lg p-5 animate-fadeInUp [animation-delay:200ms] relative overflow-hidden group">
+              <div className="absolute top-0 right-0 w-20 h-20 bg-emerald-500/5 rounded-bl-full transition-all group-hover:bg-emerald-500/10" />
+              <p className="text-xs uppercase tracking-wide text-atelie-textoMuted mb-1">Concluídas</p>
+              <p className="font-display text-2xl text-emerald-300">{stats.concluidas}</p>
+              <div className="mt-2 w-full h-1.5 bg-atelie-superficie2 rounded-full overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-emerald-500 barra-progresso"
+                  style={{ width: `${stats.total > 0 ? (stats.concluidas / stats.total) * 100 : 0}%` }}
+                />
+              </div>
+            </div>
+            <div className="bg-atelie-superficie border border-atelie-borda rounded-lg p-5 animate-fadeInUp [animation-delay:300ms] relative overflow-hidden group">
+              <div className="absolute top-0 right-0 w-20 h-20 bg-atelie-dourado/5 rounded-bl-full transition-all group-hover:bg-atelie-dourado/10" />
+              <p className="text-xs uppercase tracking-wide text-atelie-textoMuted mb-1">Receita total</p>
+              <p className="font-display text-2xl text-atelie-douradoClaro">{formatarMoeda(stats.receitaTotal)}</p>
+              <p className="text-xs text-atelie-textoMuted mt-1">
+                Margem média: {margemMedia.toFixed(0)}%
+              </p>
+            </div>
           </div>
-          <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2">
-            {stats.porStatus.map((s) => {
-              const corMap: Record<string, string> = {
-                'Esboço': 'bg-zinc-500',
-                'Imprimatura': 'bg-atelie-terracota',
-                'Pintura em andamento': 'bg-atelie-dourado',
-                'Retoques finais': 'bg-atelie-douradoClaro',
-                'Verniz final': 'bg-atelie-terracotaClaro',
-                'Concluída': 'bg-emerald-500',
-              };
-              return (
-                <div key={s.status} className="flex items-center gap-1.5 text-xs text-atelie-textoMuted">
-                  <span className={`w-2 h-2 rounded-full ${corMap[s.status] ?? 'bg-zinc-500'}`} />
-                  {s.status} ({s.quantidade})
-                </div>
-              );
-            })}
+        )}
+
+        {/* Dashboard interativo com gráficos */}
+        {obras && obras.length > 0 && (
+          <DashboardCliente obras={obras} stats={stats!} />
+        )}
+
+        {/* Filtro e busca */}
+        {obras && obras.length > 0 && <FiltroObras />}
+
+        {/* Grid de obras */}
+        {!obras || obras.length === 0 ? (
+          <div className="border border-dashed border-atelie-borda rounded-lg py-16 text-center">
+            <p className="text-atelie-textoMuted mb-4">Nenhuma obra cadastrada ainda.</p>
+            <a
+              href="/admin/nova-obra"
+              className="inline-block btn-dourado px-5 py-2.5"
+            >
+              Cadastrar primeira obra
+            </a>
           </div>
-        </div>
-      )}
-
-      {/* Filtro e busca */}
-      {obras && obras.length > 0 && (
-        <FiltroObras />
-      )}
-
-      {/* Grid de obras */}
-      {!obras || obras.length === 0 ? (
-        <div className="border border-dashed border-atelie-borda rounded-lg py-16 text-center">
-          <p className="text-atelie-textoMuted mb-4">Nenhuma obra cadastrada ainda.</p>
-          <a
-            href="/admin/nova-obra"
-            className="inline-block btn-dourado px-5 py-2.5"
+        ) : (
+          <div
+            id="grid-obras"
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"
           >
-            Cadastrar primeira obra
-          </a>
-        </div>
-      ) : (
-        <div
-          id="grid-obras"
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"
-        >
-          {(obras as Obra[]).map((obra) => (
-            <ObraCard key={obra.id} obra={obra} />
-          ))}
-        </div>
-      )}
-    </div>
+            {(obras as Obra[]).map((obra) => (
+              <ObraCard key={obra.id} obra={obra} />
+            ))}
+          </div>
+        )}
+      </div>
+    </>
   );
 }
