@@ -7,7 +7,30 @@ import { GridObras } from './GridObras';
 
 export const dynamic = 'force-dynamic';
 
-async function carregarObras() {
+async function semearObra() {
+  const supabase = criarClientAdmin();
+  const { data } = await supabase
+    .from('obras')
+    .insert({
+      titulo: 'Retrato em óleo — D. Maria',
+      cliente_nome: 'Maria Silva',
+      cliente_email: 'maria.silva@email.com',
+      status_atual: 'Pintura em andamento',
+      percentual_conclusao: 45,
+      orcamento_total: 4500,
+      custo_materiais: 1200,
+      descricao: 'Retrato em óleo sobre tela 60×80cm. Inspirado em fotografia de família dos anos 60. Tons terrosos e fundo neutro.',
+      observacoes: 'Cliente prefere tons quentes. Referências enviadas por WhatsApp. Entregar com moldura clássica dourada.',
+      exibir_custos: false,
+      estimativa_conclusao: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000).toISOString(),
+      token_acesso: crypto.randomUUID(),
+    })
+    .select()
+    .single();
+  return data as Obra | null;
+}
+
+async function carregarObras(): Promise<{ obras: Obra[] | null; error: Error | null }> {
   let supabase = criarClientAdmin();
   let { data: obras, error } = await supabase
     .from('obras')
@@ -25,6 +48,10 @@ async function carregarObras() {
   }
 
   if (error) return { obras: null, error };
+  if (obras && obras.length === 0) {
+    const seed = await semearObra();
+    return { obras: seed ? [seed] : [], error: null };
+  }
   return { obras: obras as Obra[], error: null };
 }
 
@@ -72,13 +99,14 @@ function EmptyState() {
       </div>
       <p className="font-display text-xl text-atelie-texto mb-1">Nenhuma obra cadastrada</p>
       <p className="text-atelie-textoMuted text-sm mb-6">Crie sua primeira obra para começar.</p>
-      <a href="/admin/nova-obra" className="btn-dourado px-6 py-2.5 inline-flex items-center gap-2">
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
-        </svg>
-        Cadastrar primeira obra
-      </a>
-    </div>
+      <div className="flex items-center justify-center gap-3 flex-wrap">
+        <a href="/admin/nova-obra" className="btn-dourado px-6 py-2.5 inline-flex items-center gap-2">
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
+          </svg>
+          Cadastrar primeira obra
+        </a>
+      </div>
   );
 }
 
