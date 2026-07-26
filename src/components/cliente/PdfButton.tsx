@@ -30,7 +30,7 @@ export function PdfButton({
 
       doc.setTextColor(198, 161, 91);
       doc.setFontSize(14);
-      doc.text('Ateliê', pageW / 2, pageH / 2 - 30, { align: 'center' });
+      doc.text('Atelier Bruno Amaral', pageW / 2, pageH / 2 - 30, { align: 'center' });
 
       doc.setTextColor(237, 231, 220);
       doc.setFontSize(28);
@@ -180,7 +180,7 @@ export function PdfButton({
         doc.setPage(i);
         doc.setFontSize(8);
         doc.setTextColor(51, 46, 36);
-        doc.text(`Ateliê • ${obra.titulo} • Página ${i} de ${totalPages}`, pageW / 2, pageH - 10, { align: 'center' });
+        doc.text(`Atelier Bruno Amaral • ${obra.titulo} • Página ${i} de ${totalPages}`, pageW / 2, pageH - 10, { align: 'center' });
       }
 
       doc.save(`${obra.titulo.replace(/\s+/g, '-').toLowerCase()}-relatorio.pdf`);

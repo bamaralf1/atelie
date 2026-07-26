@@ -30,7 +30,7 @@ export default function LoginAdminPage({
       <div className="w-full max-w-sm animate-fadeInUp">
         {/* Logo */}
         <div className="text-center mb-8">
-          <p className="font-display text-5xl text-atelie-dourado italic mb-2">Ateliê</p>
+          <p className="font-display text-5xl text-atelie-dourado italic mb-2">Atelier Bruno Amaral</p>
           <p className="text-atelie-textoMuted text-sm">Acesso ao painel do artista</p>
         </div>
 

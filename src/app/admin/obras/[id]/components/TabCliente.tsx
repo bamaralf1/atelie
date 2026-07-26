@@ -119,7 +119,7 @@ export function TabCliente({ obra }: { obra: Obra }) {
       <div className="bg-atelie-superficie border border-atelie-borda rounded-lg p-6">
         <p className="text-xs uppercase tracking-wide text-atelie-textoMuted mb-3">Pré-visualização do link do cliente</p>
         <div className="bg-atelie-fundo border border-atelie-borda rounded-lg p-4 text-center">
-          <p className="font-display italic text-atelie-dourado text-sm mb-1">Ateliê</p>
+          <p className="font-display italic text-atelie-dourado text-sm mb-1">Atelier Bruno Amaral</p>
           <p className="text-atelie-texto font-display text-lg mb-1">{obra.titulo}</p>
           <p className="text-atelie-textoMuted text-xs mb-3">Acompanhamento exclusivo para {obra.cliente_nome}</p>
           <div className="w-full bg-atelie-superficie2 rounded-full h-1.5 mb-2">

@@ -150,7 +150,7 @@ export function ClienteView({
         )}
 
         <div className="relative text-center max-w-2xl">
-          <p className="font-display italic text-atelie-dourado text-sm mb-3 tracking-widest uppercase">Ateliê</p>
+          <p className="font-display italic text-atelie-dourado text-sm mb-3 tracking-widest uppercase">Atelier Bruno Amaral</p>
           <h1 className="font-display text-4xl sm:text-5xl md:text-6xl mb-3 leading-tight text-atelie-texto drop-shadow-lg">
             {obra.titulo}
           </h1>
@@ -377,7 +377,7 @@ export function ClienteView({
 
       {/* Rodapé */}
       <footer className="border-t border-atelie-borda py-8 text-center">
-        <p className="font-display italic text-atelie-dourado text-sm mb-1">Ateliê</p>
+        <p className="font-display italic text-atelie-dourado text-sm mb-1">Atelier Bruno Amaral</p>
         <p className="text-[10px] text-atelie-textoMuted">Acompanhamento em tempo real · {obra.titulo}</p>
       </footer>
     </div>

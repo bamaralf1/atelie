@@ -23,11 +23,11 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Ateliê — Acompanhamento de Obras',
+  title: 'Atelier Bruno Amaral — Acompanhamento de Obras',
   description: 'Acompanhe em tempo real o andamento da sua pintura a óleo.',
   icons: { icon: '/favicon.svg' },
   manifest: '/manifest.json',
-  appleWebApp: { capable: true, title: 'Ateliê', statusBarStyle: 'black-translucent' },
+  appleWebApp: { capable: true, title: 'Atelier Bruno Amaral', statusBarStyle: 'black-translucent' },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -22,7 +22,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <header className="border-b border-atelie-borda bg-atelie-superficie/80 backdrop-blur-xl sticky top-0 z-40">
         <div className="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between">
           <Link href="/admin" className="font-display text-2xl text-atelie-dourado italic hover:text-atelie-douradoClaro transition-colors">
-            Ateliê
+            Atelier Bruno Amaral
           </Link>
           <nav className="flex items-center gap-3 text-sm">
             <Link
