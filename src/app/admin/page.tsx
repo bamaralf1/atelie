@@ -4,7 +4,6 @@ import { Obra, EstatisticasDashboard } from '@/lib/types';
 import { FiltroObras } from './FiltroObras';
 import { formatarMoeda } from '@/lib/utils';
 import { DashboardCliente } from './DashboardCliente';
-import { PaletaAtalhos } from '@/components/ui/AtalhosTeclado';
 
 export const dynamic = 'force-dynamic';
 
@@ -50,9 +49,7 @@ export default async function DashboardAdmin() {
     : 0;
 
   return (
-    <>
-      <PaletaAtalhos />
-      <div>
+    <div>
         {/* Cabeçalho */}
         <div className="flex items-end justify-between mb-8">
           <div>
@@ -139,6 +136,5 @@ export default async function DashboardAdmin() {
           </div>
         )}
       </div>
-    </>
   );
 }
