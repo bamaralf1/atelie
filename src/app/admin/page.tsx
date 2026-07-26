@@ -1,9 +1,8 @@
 import { criarClientAdmin } from '@/lib/supabase/admin';
-import { ObraCard } from '@/components/admin/ObraCard';
 import { Obra, EstatisticasDashboard } from '@/lib/types';
-import { FiltroObras } from './FiltroObras';
 import { formatarMoeda } from '@/lib/utils';
 import { DashboardCliente } from './DashboardCliente';
+import { GridObras } from './GridObras';
 
 export const dynamic = 'force-dynamic';
 
@@ -111,29 +110,16 @@ export default async function DashboardAdmin() {
           <DashboardCliente obras={obras} stats={stats!} />
         )}
 
-        {/* Filtro e busca */}
-        {obras && obras.length > 0 && <FiltroObras />}
-
-        {/* Grid de obras */}
+        {/* Grid de obras com filtro integrado */}
         {!obras || obras.length === 0 ? (
           <div className="border border-dashed border-atelie-borda rounded-lg py-16 text-center">
             <p className="text-atelie-textoMuted mb-4">Nenhuma obra cadastrada ainda.</p>
-            <a
-              href="/admin/nova-obra"
-              className="inline-block btn-dourado px-5 py-2.5"
-            >
+            <a href="/admin/nova-obra" className="inline-block btn-dourado px-5 py-2.5">
               Cadastrar primeira obra
             </a>
           </div>
         ) : (
-          <div
-            id="grid-obras"
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"
-          >
-            {(obras as Obra[]).map((obra) => (
-              <ObraCard key={obra.id} obra={obra} />
-            ))}
-          </div>
+          <GridObras obras={obras as Obra[]} />
         )}
       </div>
   );
