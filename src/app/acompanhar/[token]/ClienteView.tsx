@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
-import { Obra, Material, HistoricoStatus, FotoProgresso } from '@/lib/types';
+import { Obra, Material, HistoricoStatus, FotoProgresso, Comentario } from '@/lib/types';
 import { useRealtimeObra } from '@/hooks/useRealtimeObra';
 import { useTempoDecorrido } from '@/hooks/useTempoDecorrido';
 import { ProgressBar } from '@/components/admin/ProgressBar';
@@ -12,7 +12,7 @@ import { Lightbox } from '@/components/cliente/Lightbox';
 import { PdfButton } from '@/components/cliente/PdfButton';
 import { ComparacaoSlider } from '@/components/cliente/ComparacaoSlider';
 import { Celebracao } from '@/components/cliente/Celebracao';
-import { Comentarios, Comentario } from '@/components/cliente/Comentarios';
+import { Comentarios } from '@/components/cliente/Comentarios';
 import { formatarData, formatarMoeda, formatarDiasRestantes, corStatusDot } from '@/lib/utils';
 
 const SECOES = [

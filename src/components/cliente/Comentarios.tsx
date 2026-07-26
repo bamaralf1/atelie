@@ -3,13 +3,7 @@
 import { useState } from 'react';
 import { formatarDataHora } from '@/lib/utils';
 import { enviarComentarioAction } from '@/app/acompanhar/[token]/acoes';
-
-export interface Comentario {
-  id: string;
-  autor: 'artista' | 'cliente';
-  texto: string;
-  criado_em: string;
-}
+import { Comentario } from '@/lib/types';
 
 interface ComentariosProps {
   token: string;
@@ -30,6 +24,7 @@ export function Comentarios({ token, obraId, comentariosIniciais }: ComentariosP
     if (!resultado.erro) {
       const novo: Comentario = {
         id: crypto.randomUUID(),
+        obra_id: obraId,
         autor: 'cliente',
         texto: texto.trim(),
         criado_em: new Date().toISOString(),

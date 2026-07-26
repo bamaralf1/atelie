@@ -72,6 +72,14 @@ export interface FotoProgresso {
   data_upload: string;
 }
 
+export interface Comentario {
+  id: string;
+  obra_id: string;
+  autor: 'artista' | 'cliente';
+  texto: string;
+  criado_em: string;
+}
+
 export interface EstatisticasDashboard {
   total: number;
   emAndamento: number;

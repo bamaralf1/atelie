@@ -2,15 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { criarClientBrowser } from '@/lib/supabase/client';
-import { Obra, Material, HistoricoStatus, FotoProgresso } from '@/lib/types';
-
-export interface Comentario {
-  id: string;
-  obra_id: string;
-  autor: 'artista' | 'cliente';
-  texto: string;
-  criado_em: string;
-}
+import { Obra, Material, HistoricoStatus, FotoProgresso, Comentario } from '@/lib/types';
 
 interface DadosObraCompletos {
   obra: Obra;
