@@ -51,16 +51,16 @@ export function GridObras({ obras }: { obras: Obra[] }) {
             value={termo}
             onChange={(e) => setTermo(e.target.value)}
             placeholder="Buscar obras... (⌘K)"
-            className="w-full bg-atelie-superficie border border-atelie-borda rounded-md pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-atelie-dourado/60 transition-all"
+            className="input-atelie pl-9"
           />
           {termo && (
-            <button onClick={() => setTermo('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-atelie-textoMuted hover:text-atelie-texto">✕</button>
+            <button onClick={() => setTermo('')} className="btn-ghost absolute right-1.5 top-1/2 -translate-y-1/2 p-1">✕</button>
           )}
         </div>
         <select
           value={statusFiltro}
           onChange={(e) => setStatusFiltro(e.target.value)}
-          className="bg-atelie-superficie border border-atelie-borda rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-atelie-dourado/60"
+          className="input-atelie w-auto min-w-[160px]"
         >
           <option value="">Todos os status</option>
           {STATUS_OPCOES.map((s) => (

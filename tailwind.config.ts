@@ -29,6 +29,8 @@ const config: Config = {
       boxShadow: {
         dourado: '0 0 0 1px rgba(198,161,91,0.35)',
         'dourado-lg': '0 0 20px rgba(198,161,91,0.15), 0 0 0 1px rgba(198,161,91,0.35)',
+        'dourado-glow': '0 0 30px rgba(198,161,91,0.12), 0 0 0 1px rgba(198,161,91,0.35)',
+        soft: '0 2px 12px rgba(0,0,0,0.3)',
       },
       keyframes: {
         fadeInUp: {
@@ -59,6 +61,14 @@ const config: Config = {
           '0%': { opacity: '0', transform: 'translateX(20px)' },
           '100%': { opacity: '1', transform: 'translateX(0)' },
         },
+        slideDown: {
+          '0%': { opacity: '0', transform: 'translateY(-8px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        scaleSm: {
+          '0%': { opacity: '0', transform: 'scale(0.97)' },
+          '100%': { opacity: '1', transform: 'scale(1)' },
+        },
       },
       animation: {
         fadeInUp: 'fadeInUp .5s ease-out both',
@@ -68,6 +78,8 @@ const config: Config = {
         shimmer: 'shimmer 2s linear infinite',
         scaleIn: 'scaleIn .3s ease-out both',
         slideInRight: 'slideInRight .4s ease-out both',
+        slideDown: 'slideDown .25s ease-out both',
+        scaleSm: 'scaleSm .2s ease-out both',
       },
     },
   },

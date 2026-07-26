@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, useRef, ReactNode } from 'react';
 
 type TipoToast = 'sucesso' | 'erro' | 'info' | 'aviso';
 
@@ -8,6 +8,7 @@ interface Toast {
   id: string;
   mensagem: string;
   tipo: TipoToast;
+  saindo?: boolean;
 }
 
 interface ToastCtx {
@@ -32,29 +33,42 @@ const CORES: Record<TipoToast, string> = {
   aviso: 'border-yellow-600/30 bg-yellow-950/40',
 };
 
+function removerDepois(toasts: Toast[], id: string, setToasts: (t: Toast[]) => void) {
+  setToasts(toasts.map((t) => t.id === id ? { ...t, saindo: true } : t));
+  setTimeout(() => setToasts(toasts.filter((t) => t.id !== id)), 300);
+}
+
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
   const adicionar = useCallback((mensagem: string, tipo: TipoToast = 'info') => {
     const id = crypto.randomUUID();
     setToasts((prev) => [...prev, { id, mensagem, tipo }]);
-    setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 4000);
+    setTimeout(() => {
+      setToasts((prev) => {
+        removerDepois(prev, id, setToasts);
+        return prev;
+      });
+    }, 4000);
   }, []);
 
   return (
     <ToastContext.Provider value={{ adicionar }}>
       {children}
-      <div className="fixed bottom-6 right-6 z-[100] flex flex-col gap-2 max-w-sm">
+      <div className="fixed bottom-6 right-6 z-[100] flex flex-col gap-2 max-w-sm pointer-events-none">
         {toasts.map((toast) => (
           <div
             key={toast.id}
-            className={`flex items-start gap-3 px-4 py-3 rounded-lg border backdrop-blur-md shadow-lg animate-slideUp ${CORES[toast.tipo]}`}
+            className={`pointer-events-auto flex items-start gap-3 px-4 py-3 rounded-lg border backdrop-blur-md shadow-lg
+              transition-all duration-300 ease-out
+              ${toast.saindo ? 'opacity-0 translate-x-4' : 'opacity-100 translate-x-0 animate-slideUp'}
+              ${CORES[toast.tipo]}`}
           >
             <span className="mt-0.5 shrink-0">{ICONES[toast.tipo]}</span>
             <p className="text-sm text-atelie-texto flex-1">{toast.mensagem}</p>
             <button
-              onClick={() => setToasts((prev) => prev.filter((t) => t.id !== toast.id))}
-              className="text-atelie-textoMuted hover:text-atelie-texto shrink-0"
+              onClick={() => setToasts((prev) => { removerDepois(prev, toast.id, setToasts); return prev; })}
+              className="text-atelie-textoMuted hover:text-atelie-texto shrink-0 transition-colors"
             >
               ✕
             </button>

@@ -6,18 +6,50 @@
   border-color: theme('colors.atelie.borda');
 }
 
+::selection {
+  background: theme('colors.atelie.dourado' / 0.3);
+  color: theme('colors.atelie.texto');
+}
+
 body {
   background-image:
-    radial-gradient(ellipse at top, rgba(198, 161, 91, 0.05), transparent 60%);
+    radial-gradient(ellipse at top, rgba(198, 161, 91, 0.04), transparent 60%),
+    radial-gradient(ellipse at bottom left, rgba(181, 86, 58, 0.03), transparent 50%);
+}
+
+/* Smooth anchor jumps */
+html {
+  scroll-behavior: smooth;
 }
 
 .barra-progresso {
   transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* --- Scrollbar --- */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: theme('colors.atelie.borda');
+  border-radius: 8px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: theme('colors.atelie.dourado' / 0.5);
+}
+* {
+  scrollbar-width: thin;
+  scrollbar-color: theme('colors.atelie.borda') transparent;
+}
+
 :focus-visible {
   outline: 2px solid theme('colors.atelie.dourado');
   outline-offset: 2px;
+  border-radius: 2px;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -27,31 +59,51 @@ body {
   }
 }
 
-::-webkit-scrollbar { width: 10px; height: 10px; }
-::-webkit-scrollbar-track { background: theme('colors.atelie.fundo'); }
-::-webkit-scrollbar-thumb { background: theme('colors.atelie.borda'); border-radius: 8px; }
-::-webkit-scrollbar-thumb:hover { background: theme('colors.atelie.textoMuted'); }
-
 @layer components {
   .card-premium {
-    @apply bg-atelie-superficie border border-atelie-borda rounded-lg
+    @apply bg-atelie-superficie border border-atelie-borda rounded-xl
       hover:border-atelie-dourado/40 transition-all duration-300;
   }
 
+  .card-interactive {
+    @apply bg-atelie-superficie border border-atelie-borda rounded-xl
+      hover:border-atelie-dourado/40 hover:shadow-dourado
+      transition-all duration-300 ease-out;
+  }
+
   .btn-dourado {
-    @apply bg-atelie-dourado text-atelie-fundo font-medium rounded-md
-      hover:bg-atelie-douradoClaro transition-colors disabled:opacity-50;
+    @apply bg-atelie-dourado text-atelie-fundo font-medium rounded-lg
+      hover:bg-atelie-douradoClaro active:scale-[0.97]
+      transition-all duration-200 ease-out
+      disabled:opacity-50 disabled:pointer-events-none;
   }
 
   .btn-outline {
-    @apply border border-atelie-dourado/50 text-atelie-douradoClaro rounded-md
-      hover:bg-atelie-dourado/10 transition-colors disabled:opacity-50;
+    @apply border border-atelie-dourado/50 text-atelie-douradoClaro rounded-lg
+      hover:bg-atelie-dourado/10 active:scale-[0.97]
+      transition-all duration-200 ease-out
+      disabled:opacity-50 disabled:pointer-events-none;
+  }
+
+  .btn-ghost {
+    @apply text-atelie-textoMuted rounded-lg
+      hover:text-atelie-texto hover:bg-atelie-superficie2/50
+      active:scale-[0.97] transition-all duration-200 ease-out;
   }
 
   .input-atelie {
-    @apply w-full bg-atelie-fundo border border-atelie-borda rounded-md px-3 py-2
-      focus:outline-none focus:ring-2 focus:ring-atelie-dourado/60 focus:border-atelie-dourado/60
-      transition-all duration-200;
+    @apply w-full bg-atelie-fundo border border-atelie-borda rounded-lg px-3 py-2.5
+      text-sm text-atelie-texto placeholder:text-atelie-textoMuted/50
+      focus:outline-none focus:ring-2 focus:ring-atelie-dourado/50 focus:border-atelie-dourado/50
+      transition-all duration-200 ease-out;
+  }
+
+  .input-atelie-error {
+    @apply border-atelie-terracota focus:ring-atelie-terracota/50 focus:border-atelie-terracota;
+  }
+
+  .label-atelie {
+    @apply block text-xs uppercase tracking-widest text-atelie-textoMuted mb-1.5;
   }
 
   .gradient-dourado {
@@ -60,6 +112,10 @@ body {
 
   .gradient-terracota {
     @apply bg-gradient-to-r from-atelie-terracota to-atelie-terracotaClaro;
+  }
+
+  .gradient-text {
+    @apply bg-gradient-to-r from-atelie-dourado to-atelie-douradoClaro bg-clip-text text-transparent;
   }
 
   .text-shimmer {
