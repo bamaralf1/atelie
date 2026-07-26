@@ -12,6 +12,7 @@ import { Lightbox } from '@/components/cliente/Lightbox';
 import { PdfButton } from '@/components/cliente/PdfButton';
 import { ComparacaoSlider } from '@/components/cliente/ComparacaoSlider';
 import { Celebracao } from '@/components/cliente/Celebracao';
+import { Comentarios, Comentario } from '@/components/cliente/Comentarios';
 import { formatarData, formatarMoeda, formatarDiasRestantes, corStatusDot } from '@/lib/utils';
 
 const SECOES = [
@@ -19,6 +20,7 @@ const SECOES = [
   { id: 'comparacao', label: 'Comparação' },
   { id: 'galeria', label: 'Galeria' },
   { id: 'timeline', label: 'Linha do tempo' },
+  { id: 'comentarios', label: 'Comentários' },
   { id: 'materiais', label: 'Materiais' },
   { id: 'observacoes', label: 'Observações' },
 ];
@@ -28,17 +30,20 @@ export function ClienteView({
   materiaisIniciais,
   historicoInicial,
   fotosIniciais,
+  comentariosIniciais,
 }: {
   obraInicial: Obra;
   materiaisIniciais: Material[];
   historicoInicial: HistoricoStatus[];
   fotosIniciais: FotoProgresso[];
+  comentariosIniciais: Comentario[];
 }) {
-  const { obra, materiais, historico, fotos, notificacao } = useRealtimeObra({
+  const { obra, materiais, historico, fotos, comentarios, notificacao } = useRealtimeObra({
     obra: obraInicial,
     materiais: materiaisIniciais,
     historico: historicoInicial,
     fotos: fotosIniciais,
+    comentarios: comentariosIniciais,
   });
 
   const tempoAtualizacao = useTempoDecorrido(obra.updated_at);
@@ -279,6 +284,19 @@ export function ClienteView({
         <section id="secao-timeline" className="scroll-mt-20 animate-fadeInUp [animation-delay:200ms]">
           <h2 className="font-display text-2xl mb-4">Linha do tempo</h2>
           <Timeline historico={historico} fotos={fotos} />
+        </section>
+
+        {/* Seção: Comentários */}
+        <section id="secao-comentarios" className="scroll-mt-20 animate-fadeInUp [animation-delay:225ms]">
+          <div className="bg-atelie-superficie border border-atelie-borda rounded-2xl p-6 sm:p-8">
+            <h2 className="font-display text-2xl mb-2">Comentários</h2>
+            <p className="text-sm text-atelie-textoMuted mb-6">Tire dúvidas ou deixe um feedback sobre a obra.</p>
+            <Comentarios
+              token={obra.token_acesso}
+              obraId={obra.id}
+              comentariosIniciais={comentarios}
+            />
+          </div>
         </section>
 
         {/* Seção: Materiais */}

@@ -1,7 +1,7 @@
 import { criarClientAdmin } from '@/lib/supabase/admin';
 import { criarClientServidor } from '@/lib/supabase/server';
 import { Obra, EstatisticasDashboard } from '@/lib/types';
-import { formatarMoeda } from '@/lib/utils';
+import { formatarMoeda, formatarData, formatarDiasRestantes, tempoRelativo } from '@/lib/utils';
 import { DashboardCliente } from './DashboardCliente';
 import { GridObras } from './GridObras';
 
@@ -125,6 +125,72 @@ export default async function DashboardAdmin() {
         {/* Dashboard interativo com gráficos */}
         {obras && obras.length > 0 && (
           <DashboardCliente obras={obras} stats={stats!} />
+        )}
+
+        {/* Widgets: Próximos prazos + Atividades recentes */}
+        {obras && obras.length > 0 && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-8">
+            {/* Próximos prazos */}
+            <div className="bg-atelie-superficie border border-atelie-borda rounded-lg p-5 animate-fadeInUp">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-1 h-4 rounded-full bg-gradient-to-b from-atelie-dourado to-atelie-douradoClaro" />
+                <p className="text-xs uppercase tracking-wide text-atelie-textoMuted font-semibold">Próximos prazos</p>
+              </div>
+              <div className="space-y-2">
+                {obras
+                  .filter((o) => o.estimativa_conclusao && o.status_atual !== 'Concluída')
+                  .sort((a, b) => new Date(a.estimativa_conclusao!).getTime() - new Date(b.estimativa_conclusao!).getTime())
+                  .slice(0, 5)
+                  .map((obra) => {
+                    const dias = formatarDiasRestantes(obra.estimativa_conclusao);
+                    return (
+                      <a
+                        key={obra.id}
+                        href={`/admin/obras/${obra.id}`}
+                        className="flex items-center justify-between px-3 py-2.5 rounded-md hover:bg-atelie-superficie2/50 transition-colors group"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm text-atelie-texto truncate group-hover:text-atelie-douradoClaro transition-colors">{obra.titulo}</p>
+                          <p className="text-[11px] text-atelie-textoMuted truncate">{obra.cliente_nome}</p>
+                        </div>
+                        <span className={`text-xs shrink-0 ml-3 ${dias?.classe ?? 'text-atelie-textoMuted'}`}>
+                          {dias?.texto ?? formatarData(obra.estimativa_conclusao)}
+                        </span>
+                      </a>
+                    );
+                  })}
+                {obras.filter((o) => o.estimativa_conclusao && o.status_atual !== 'Concluída').length === 0 && (
+                  <p className="text-sm text-atelie-textoMuted text-center py-4">Nenhum prazo definido.</p>
+                )}
+              </div>
+            </div>
+
+            {/* Atividades recentes */}
+            <div className="bg-atelie-superficie border border-atelie-borda rounded-lg p-5 animate-fadeInUp [animation-delay:100ms]">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-1 h-4 rounded-full bg-gradient-to-b from-atelie-terracota to-atelie-terracotaClaro" />
+                <p className="text-xs uppercase tracking-wide text-atelie-textoMuted font-semibold">Atualizadas recentemente</p>
+              </div>
+              <div className="space-y-2">
+                {obras
+                  .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
+                  .slice(0, 5)
+                  .map((obra) => (
+                    <a
+                      key={obra.id}
+                      href={`/admin/obras/${obra.id}`}
+                      className="flex items-center justify-between px-3 py-2.5 rounded-md hover:bg-atelie-superficie2/50 transition-colors group"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm text-atelie-texto truncate group-hover:text-atelie-douradoClaro transition-colors">{obra.titulo}</p>
+                        <p className="text-[11px] text-atelie-textoMuted">{obra.cliente_nome} · {obra.status_atual}</p>
+                      </div>
+                      <span className="text-[11px] text-atelie-textoMuted shrink-0 ml-3">{tempoRelativo(obra.updated_at)}</span>
+                    </a>
+                  ))}
+              </div>
+            </div>
+          </div>
         )}
 
         {/* Grid de obras com filtro integrado */}

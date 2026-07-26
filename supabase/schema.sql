@@ -122,12 +122,24 @@ after insert or update on obras
 for each row execute procedure trg_registrar_historico_status();
 
 -- ---------------------------------------------------------
+-- Comentários do cliente em cada obra
+-- ---------------------------------------------------------
+create table if not exists comentarios (
+  id uuid primary key default uuid_generate_v4(),
+  obra_id uuid not null references obras(id) on delete cascade,
+  autor text not null default 'cliente' check (autor in ('cliente', 'artista')),
+  texto text not null,
+  criado_em timestamptz not null default now()
+);
+
+-- ---------------------------------------------------------
 -- Índices úteis
 -- ---------------------------------------------------------
 create index if not exists idx_obras_token on obras(token_acesso);
 create index if not exists idx_materiais_obra on materiais(obra_id);
 create index if not exists idx_historico_obra on historico_status(obra_id);
 create index if not exists idx_fotos_obra on fotos_progresso(obra_id);
+create index if not exists idx_comentarios_obra on comentarios(obra_id);
 
 -- ---------------------------------------------------------
 -- Row Level Security (RLS)
@@ -139,6 +151,7 @@ alter table obras enable row level security;
 alter table materiais enable row level security;
 alter table historico_status enable row level security;
 alter table fotos_progresso enable row level security;
+alter table comentarios enable row level security;
 
 -- Leitura pública (necessária para a página /acompanhar/[token] e Realtime)
 drop policy if exists "Leitura publica obras" on obras;
@@ -152,6 +165,12 @@ create policy "Leitura publica historico" on historico_status for select using (
 
 drop policy if exists "Leitura publica fotos" on fotos_progresso;
 create policy "Leitura publica fotos" on fotos_progresso for select using (true);
+
+drop policy if exists "Leitura publica comentarios" on comentarios;
+create policy "Leitura publica comentarios" on comentarios for select using (true);
+
+drop policy if exists "Insercao publica comentarios" on comentarios;
+create policy "Insercao publica comentarios" on comentarios for insert with check (true);
 
 -- Nenhuma policy de INSERT/UPDATE/DELETE é criada para a role "anon":
 -- por padrão, com RLS ativo e sem policy correspondente, essas operações
@@ -183,3 +202,4 @@ alter publication supabase_realtime add table obras;
 alter publication supabase_realtime add table historico_status;
 alter publication supabase_realtime add table fotos_progresso;
 alter publication supabase_realtime add table materiais;
+alter publication supabase_realtime add table comentarios;
