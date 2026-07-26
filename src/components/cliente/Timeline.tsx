@@ -91,7 +91,7 @@ export function Timeline({
 
   return (
     <div className="relative">
-      <div className="absolute left-[23px] top-0 bottom-0 w-0.5 bg-gradient-to-b from-atelie-dourado via-atelie-dourado/40 to-transparent" />
+      <div className="absolute left-[23px] top-0 bottom-0 w-px bg-gradient-to-b from-atelie-dourado via-atelie-dourado/30 to-transparent" />
 
       <ol className="relative space-y-6">
         {historico.map((item, index) => {
@@ -100,45 +100,46 @@ export function Timeline({
           const dotColor = corStatusDot(item.status_novo);
 
           return (
-            <li key={item.id} className="relative pl-14">
+            <li key={item.id} className="relative pl-14 group">
+              {/* Dot */}
               <span
                 className={`absolute left-[17px] flex items-center justify-center w-[13px] h-[13px] rounded-full border-2 transition-all duration-500 ${
                   ultimo
-                    ? `${dotColor} border-atelie-dourado shadow-[0_0_10px_rgba(198,161,91,0.3)]`
-                    : 'bg-atelie-fundo border-atelie-borda'
+                    ? `${dotColor} border-atelie-dourado shadow-[0_0_12px_rgba(198,161,91,0.4)]`
+                    : 'bg-atelie-fundo border-atelie-borda group-hover:border-atelie-dourado/50 group-hover:shadow-[0_0_8px_rgba(198,161,91,0.15)]'
                 }`}
               >
                 {ultimo && <span className="w-1.5 h-1.5 rounded-full bg-atelie-dourado animate-pulseDot" />}
               </span>
 
               <div
-                className={`bg-atelie-superficie border rounded-xl p-5 transition-all duration-300 hover:border-atelie-dourado/30 ${
+                className={`bg-atelie-superficie/60 backdrop-blur-sm border rounded-2xl p-5 sm:p-6 transition-all duration-300 hover:border-atelie-dourado/30 hover:shadow-dourado-glow ${
                   ultimo
-                    ? 'border-atelie-dourado/40 shadow-[0_0_20px_rgba(198,161,91,0.06)] animate-fadeInUp'
-                    : 'border-atelie-borda'
+                    ? 'border-atelie-dourado/40 shadow-[0_0_30px_rgba(198,161,91,0.06)]'
+                    : 'border-atelie-borda/60'
                 }`}
               >
-                <div className="flex items-start justify-between gap-3 mb-2">
+                <div className="flex items-start justify-between gap-3 mb-3">
                   <div>
                     <div className="flex items-center gap-2 mb-1">
-                      <span className={`text-sm font-medium ${ultimo ? 'text-atelie-douradoClaro' : 'text-atelie-texto'}`}>
+                      <span className={`text-sm font-medium ${ultimo ? 'text-atelie-douradoClaro' : 'text-atelie-texto group-hover:text-atelie-douradoClaro transition-colors'}`}>
                         {item.status_novo}
                       </span>
                       {ultimo && (
-                        <span className="text-[10px] bg-atelie-dourado/15 text-atelie-douradoClaro px-1.5 py-0.5 rounded-full font-medium">
+                        <span className="text-[10px] bg-gradient-to-r from-atelie-dourado/20 to-atelie-dourado/5 text-atelie-douradoClaro px-2 py-0.5 rounded-full font-medium border border-atelie-dourado/20">
                           Atual
                         </span>
                       )}
                     </div>
-                    <time className="text-xs text-atelie-textoMuted">
+                    <time className="text-xs text-atelie-textoMuted/60">
                       {formatarDataHora(item.data_mudanca)}
                     </time>
                   </div>
 
                   {item.status_anterior && (
-                    <div className="flex items-center gap-1.5 text-[10px] text-atelie-textoMuted bg-atelie-superficie2 px-2 py-1 rounded-full shrink-0">
+                    <div className="flex items-center gap-1.5 text-[10px] text-atelie-textoMuted bg-black/30 px-2.5 py-1 rounded-full shrink-0 border border-atelie-borda/30">
                       <span>{item.status_anterior}</span>
-                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <svg className="w-3 h-3 text-atelie-douradoClaro" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                       </svg>
                       <span className="text-atelie-douradoClaro">{item.status_novo}</span>
@@ -147,31 +148,31 @@ export function Timeline({
                 </div>
 
                 {item.observacao && (
-                  <p className="text-sm text-atelie-textoMuted leading-relaxed mt-2">{item.observacao}</p>
+                  <p className="text-sm text-atelie-textoMuted leading-relaxed">{item.observacao}</p>
                 )}
 
                 {fotosDaData.length > 0 && (
-                  <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
-                    {fotosDaData.slice(0, 3).map((foto) => (
-                      <div key={foto.id} className="relative w-20 h-20 shrink-0 rounded-lg overflow-hidden border border-atelie-borda group">
-                        <img src={foto.url_foto} alt={foto.legenda ?? ''} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
+                  <div className="mt-4 flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+                    {fotosDaData.slice(0, 4).map((foto) => (
+                      <div key={foto.id} className="relative w-20 h-20 shrink-0 rounded-xl overflow-hidden border border-atelie-borda/40 group/card">
+                        <img src={foto.url_foto} alt={foto.legenda ?? ''} className="w-full h-full object-cover group-hover/card:scale-110 transition-transform duration-500" />
                         {foto.legenda && (
-                          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-1">
-                            <p className="text-[8px] text-white truncate">{foto.legenda}</p>
+                          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-1.5">
+                            <p className="text-[8px] text-white/80 truncate">{foto.legenda}</p>
                           </div>
                         )}
                       </div>
                     ))}
-                    {fotosDaData.length > 3 && (
-                      <div className="w-20 h-20 shrink-0 rounded-lg border border-atelie-borda bg-atelie-superficie2 flex items-center justify-center">
-                        <span className="text-[10px] text-atelie-textoMuted">+{fotosDaData.length - 3}</span>
+                    {fotosDaData.length > 4 && (
+                      <div className="w-20 h-20 shrink-0 rounded-xl border border-atelie-borda/40 bg-black/30 backdrop-blur-sm flex items-center justify-center">
+                        <span className="text-[10px] text-atelie-textoMuted font-medium">+{fotosDaData.length - 4}</span>
                       </div>
                     )}
                   </div>
                 )}
 
                 {ultimo && (
-                  <div className="mt-3 pt-3 border-t border-atelie-borda">
+                  <div className="mt-4 pt-4 border-t border-atelie-borda/50">
                     <TimelineReacts storageKey={`timeline_${item.id}`} />
                   </div>
                 )}
