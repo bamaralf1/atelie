@@ -30,13 +30,13 @@ export function DashboardCliente({ obras, stats }: { obras: Obra[]; stats: Estat
   return (
     <div className="space-y-6 mb-8">
       {/* Botões de ação */}
-      <div className="card-glass-darker p-2 flex items-center justify-between animate-fadeInUp">
-        <div className="flex gap-1 bg-black/30 rounded-lg p-0.5">
+      <div className="flex items-center justify-between">
+        <div className="flex gap-1 bg-atelie-superficie border border-atelie-borda rounded-lg p-1">
           <button
             onClick={() => setVisao('grade')}
-            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+            className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
               visao === 'grade'
-                ? 'bg-atelie-dourado/20 text-atelie-douradoClaro shadow-sm'
+                ? 'bg-atelie-dourado/20 text-atelie-douradoClaro'
                 : 'text-atelie-textoMuted hover:text-atelie-texto'
             }`}
           >
@@ -49,9 +49,9 @@ export function DashboardCliente({ obras, stats }: { obras: Obra[]; stats: Estat
           </button>
           <button
             onClick={() => setVisao('kanban')}
-            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+            className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
               visao === 'kanban'
-                ? 'bg-atelie-dourado/20 text-atelie-douradoClaro shadow-sm'
+                ? 'bg-atelie-dourado/20 text-atelie-douradoClaro'
                 : 'text-atelie-textoMuted hover:text-atelie-texto'
             }`}
           >
@@ -80,15 +80,12 @@ export function DashboardCliente({ obras, stats }: { obras: Obra[]; stats: Estat
       {/* Gráficos */}
       <GraficosDashboard obras={obrasState} stats={stats} />
 
-      {/* Kanban */}
+      {/* Kanban ou Grade (já mostrada fora) */}
       {visao === 'kanban' && (
-        <div className="card-glass-darker p-5 animate-fadeIn">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-1 h-4 rounded-full bg-gradient-to-b from-atelie-dourado to-atelie-douradoClaro" />
-            <p className="text-[10px] uppercase tracking-[0.15em] text-atelie-textoMuted/60 font-semibold">
-              Arraste os cartões para alterar o status
-            </p>
-          </div>
+        <div className="bg-atelie-superficie/30 border border-atelie-borda rounded-lg p-4 animate-fadeIn">
+          <p className="text-xs uppercase tracking-wide text-atelie-textoMuted mb-4">
+            Arraste os cartões para alterar o status
+          </p>
           <KanbanBoard obras={obrasState} onStatusChange={handleStatusChange} />
         </div>
       )}

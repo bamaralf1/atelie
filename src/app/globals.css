@@ -8,8 +8,7 @@
 
 body {
   background-image:
-    radial-gradient(ellipse at 50% -20%, rgba(198, 161, 91, 0.08), transparent 60%),
-    radial-gradient(ellipse at 80% 80%, rgba(181, 86, 58, 0.04), transparent 50%);
+    radial-gradient(ellipse at top, rgba(198, 161, 91, 0.05), transparent 60%);
 }
 
 .barra-progresso {
@@ -21,11 +20,6 @@ body {
   outline-offset: 2px;
 }
 
-::selection {
-  background: theme('colors.atelie.dourado' / 0.3);
-  color: theme('colors.atelie.texto');
-}
-
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
@@ -33,46 +27,31 @@ body {
   }
 }
 
-::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-track { background: theme('colors.atelie.fundo'); }
-::-webkit-scrollbar-thumb { background: theme('colors.atelie.borda'); border-radius: 6px; }
+::-webkit-scrollbar-thumb { background: theme('colors.atelie.borda'); border-radius: 8px; }
 ::-webkit-scrollbar-thumb:hover { background: theme('colors.atelie.textoMuted'); }
 
 @layer components {
-  .card-glass {
-    @apply bg-atelie-superficie/80 backdrop-blur-xl border border-white/[0.06]
-      rounded-xl shadow-lg shadow-black/20
-      hover:border-atelie-dourado/30 hover:shadow-dourado-lg
-      transition-all duration-500;
-  }
-
-  .card-glass-darker {
-    @apply bg-black/40 backdrop-blur-xl border border-white/[0.05]
-      rounded-xl shadow-xl shadow-black/30
-      hover:border-atelie-dourado/25
-      transition-all duration-500;
+  .card-premium {
+    @apply bg-atelie-superficie border border-atelie-borda rounded-lg
+      hover:border-atelie-dourado/40 transition-all duration-300;
   }
 
   .btn-dourado {
-    @apply bg-gradient-to-r from-atelie-dourado to-atelie-douradoClaro
-      text-atelie-fundo font-semibold rounded-lg
-      shadow-lg shadow-atelie-dourado/20
-      hover:shadow-xl hover:shadow-atelie-dourado/30 hover:scale-[1.02]
-      active:scale-[0.98]
-      transition-all duration-200 disabled:opacity-50 disabled:hover:scale-100;
+    @apply bg-atelie-dourado text-atelie-fundo font-medium rounded-md
+      hover:bg-atelie-douradoClaro transition-colors disabled:opacity-50;
   }
 
   .btn-outline {
-    @apply border border-atelie-dourado/40 text-atelie-douradoClaro rounded-lg
-      hover:bg-atelie-dourado/10 hover:border-atelie-dourado/60
-      active:scale-[0.98] transition-all duration-200 disabled:opacity-50;
+    @apply border border-atelie-dourado/50 text-atelie-douradoClaro rounded-md
+      hover:bg-atelie-dourado/10 transition-colors disabled:opacity-50;
   }
 
-  .input-premium {
-    @apply w-full bg-black/40 border border-white/[0.08] rounded-lg px-4 py-2.5
-      text-atelie-texto placeholder:text-atelie-textoMuted/50
-      focus:outline-none focus:ring-2 focus:ring-atelie-dourado/50 focus:border-atelie-dourado/50
-      backdrop-blur-sm transition-all duration-200;
+  .input-atelie {
+    @apply w-full bg-atelie-fundo border border-atelie-borda rounded-md px-3 py-2
+      focus:outline-none focus:ring-2 focus:ring-atelie-dourado/60 focus:border-atelie-dourado/60
+      transition-all duration-200;
   }
 
   .gradient-dourado {
@@ -83,10 +62,6 @@ body {
     @apply bg-gradient-to-r from-atelie-terracota to-atelie-terracotaClaro;
   }
 
-  .text-glow {
-    text-shadow: 0 0 40px rgba(198, 161, 91, 0.15);
-  }
-
   .text-shimmer {
     background: linear-gradient(90deg, theme('colors.atelie.textoMuted') 0%, theme('colors.atelie.texto') 50%, theme('colors.atelie.textoMuted') 100%);
     background-size: 200% 100%;
@@ -95,16 +70,8 @@ body {
     animation: shimmer 2s linear infinite;
   }
 
-  .divider-gold {
-    @apply h-px w-full bg-gradient-to-r from-transparent via-atelie-dourado/30 to-transparent;
-  }
-
-  .badge-status {
-    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold uppercase tracking-wider;
-  }
-
   .comparison-slider {
-    @apply relative overflow-hidden cursor-col-resize select-none rounded-xl;
+    @apply relative overflow-hidden cursor-col-resize select-none;
   }
 
   .comparison-slider img {
