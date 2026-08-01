@@ -1,56 +1,157 @@
 'use client';
 
-import { useState } from 'react';
-import Image from 'next/image';
-import { Obra, STATUS_OPCOES, ENTREGA_OPCOES } from '@/lib/types';
-import {
-  atualizarVisaoGeralAction,
-  atualizarRotulosAction,
-  atualizarReferenciaAction,
-} from '../actions';
+import { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
+import { Obra, STATUS_OPCOES, StatusObra, ENTREGA_OPCOES } from '@/lib/types';
+import { atualizarVisaoGeralAction, atualizarReferenciaAction, excluirObraAction } from '../actions';
 
 export function TabVisaoGeral({ obra }: { obra: Obra }) {
   const [percentual, setPercentual] = useState(obra.percentual_conclusao);
   const [salvando, setSalvando] = useState(false);
   const [salvo, setSalvo] = useState(false);
+  const [statusAtual, setStatusAtual] = useState(obra.status_atual);
+  const [confirmarStatus, setConfirmarStatus] = useState<StatusObra | null>(null);
+  const [salvandoReferencia, setSalvandoReferencia] = useState(false);
+  const [erroReferencia, setErroReferencia] = useState<string | null>(null);
+  const [confirmarExclusao, setConfirmarExclusao] = useState(false);
+  const [excluindo, setExcluindo] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
+  const router = useRouter();
+
+  async function handleTrocarReferencia(formData: FormData) {
+    setSalvandoReferencia(true);
+    setErroReferencia(null);
+    const r = await atualizarReferenciaAction(obra.id, formData);
+    if (r?.erro) setErroReferencia(r.erro);
+    setSalvandoReferencia(false);
+  }
+
+  async function handleExcluir() {
+    setExcluindo(true);
+    const r = await excluirObraAction(obra.id);
+    if (r?.erro) {
+      setExcluindo(false);
+      setConfirmarExclusao(false);
+      return;
+    }
+    router.push('/admin');
+  }
+
+  useEffect(() => {
+    if (!confirmarStatus) return;
+    function handler(e: KeyboardEvent) {
+      if (e.key === 'Escape') setConfirmarStatus(null);
+    }
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [confirmarStatus]);
+
+  const statusModificado = statusAtual !== obra.status_atual;
+
+  useEffect(() => {
+    if (!salvo) return;
+    const t = setTimeout(() => setSalvo(false), 2000);
+    return () => clearTimeout(t);
+  }, [salvo]);
 
   async function handleSubmit(formData: FormData) {
+    const statusFinal = confirmarStatus ?? statusAtual;
+    if (confirmarStatus) {
+      formData.set('status_atual', confirmarStatus!);
+      setConfirmarStatus(null);
+    }
     setSalvando(true);
     setSalvo(false);
     formData.set('percentual_conclusao', String(percentual));
     await atualizarVisaoGeralAction(obra.id, formData);
+    setStatusAtual(statusFinal);
     setSalvando(false);
     setSalvo(true);
-    setTimeout(() => setSalvo(false), 2500);
   }
+
+  function handleStatusChange(novo: StatusObra) {
+    if (obra.status_atual !== novo) {
+      setConfirmarStatus(novo);
+    } else {
+      setStatusAtual(novo);
+    }
+  }
+
+  const imagemRef = obra.imagem_referencia_url || obra.imagem_obra_atual_url;
 
   return (
     <div className="max-w-2xl space-y-6">
-      <form action={handleSubmit} className="space-y-5 bg-atelie-superficie border border-atelie-borda rounded-lg p-6">
-        <div className="grid grid-cols-2 gap-4">
-          <Campo label="Título da obra" name="titulo" defaultValue={obra.titulo} required />
-          <Campo
-            label="Orçamento total (R$)"
-            name="orcamento_total"
-            type="number"
-            step="0.01"
-            defaultValue={obra.orcamento_total}
-          />
+      {/* Imagem de referência com preview */}
+      {imagemRef && (
+        <div className="bg-atelie-superficie border border-atelie-borda rounded-lg p-4">
+          <p className="text-xs uppercase tracking-wide text-atelie-textoMuted mb-2">
+            {obra.imagem_referencia_url && !obra.imagem_obra_atual_url ? 'Imagem de referência' : 'Imagem atual da obra'}
+          </p>
+          <div className="relative w-full aspect-video rounded-md overflow-hidden border border-atelie-borda">
+            <img
+              src={imagemRef}
+              alt={obra.titulo}
+              className="w-full h-full object-cover"
+            />
+          </div>
+        </div>
+      )}
+
+      <form
+        ref={formRef}
+        action={handleSubmit}
+        className="bg-atelie-superficie border border-atelie-borda rounded-lg p-6 space-y-5"
+      >
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs uppercase tracking-wide text-atelie-textoMuted mb-2">Título da obra</label>
+            <input
+              name="titulo"
+              defaultValue={obra.titulo}
+              className="input-atelie"
+            />
+          </div>
+          <div>
+            <label className="block text-xs uppercase tracking-wide text-atelie-textoMuted mb-2">Orçamento total (R$)</label>
+            <input
+              name="orcamento_total"
+              type="number"
+              step="0.01"
+              min="0"
+              defaultValue={obra.orcamento_total || 0}
+              className="input-atelie"
+            />
+          </div>
         </div>
 
         <div>
           <label className="block text-xs uppercase tracking-wide text-atelie-textoMuted mb-2">Status atual</label>
-          <select
-            name="status_atual"
-            defaultValue={obra.status_atual}
-            className="w-full bg-atelie-fundo border border-atelie-borda rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-atelie-dourado/60"
-          >
-            {STATUS_OPCOES.map((s) => (
-              <option key={s} value={s}>{s}</option>
-            ))}
-          </select>
-          <p className="text-xs text-atelie-textoMuted mt-1">
-            Cada alteração aqui gera automaticamente um registro na linha do tempo do cliente.
+          <div className="flex flex-wrap gap-2">
+            {STATUS_OPCOES.map((s) => {
+              const ativo = statusAtual === s;
+              const cores: Record<string, string> = {
+                'Esboço': ativo ? 'bg-zinc-500/30 border-zinc-400 text-zinc-200' : 'bg-zinc-500/10 border-zinc-500/30 text-zinc-400',
+                'Imprimatura': ativo ? 'bg-atelie-terracota/30 border-atelie-terracota text-atelie-terracotaClaro' : 'bg-atelie-terracota/10 border-atelie-terracota/30 text-atelie-terracota/70',
+                'Blocagem': ativo ? 'bg-atelie-dourado/30 border-atelie-dourado text-atelie-douradoClaro' : 'bg-atelie-dourado/10 border-atelie-dourado/30 text-atelie-dourado/70',
+                'Pintura': ativo ? 'bg-atelie-dourado/30 border-atelie-dourado text-atelie-douradoClaro' : 'bg-atelie-dourado/10 border-atelie-dourado/30 text-atelie-dourado/70',
+                'Detalhamento final': ativo ? 'bg-atelie-terracota/30 border-atelie-terracota text-atelie-terracotaClaro' : 'bg-atelie-terracota/10 border-atelie-terracota/30 text-atelie-terracota/70',
+                'Concluída': ativo ? 'bg-emerald-900/40 border-emerald-500 text-emerald-300' : 'bg-emerald-900/10 border-emerald-700/30 text-emerald-700',
+              };
+              return (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => handleStatusChange(s)}
+                  className={`px-3 py-1.5 rounded-md text-xs font-medium border transition-all duration-200 ${cores[s] ?? ''}`}
+                >
+                  {s}
+                </button>
+              );
+            })}
+          </div>
+          <input type="hidden" name="status_atual" value={statusAtual} />
+          <p className="text-xs text-atelie-textoMuted mt-2">
+            Cada alteração gera automaticamente um registro na linha do tempo do cliente.
           </p>
         </div>
 
@@ -67,25 +168,42 @@ export function TabVisaoGeral({ obra }: { obra: Obra }) {
             onChange={(e) => setPercentual(parseInt(e.target.value, 10))}
             className="w-full accent-atelie-dourado"
           />
+          <div className="flex justify-between text-[10px] text-atelie-textoMuted mt-0.5">
+            <span>0%</span>
+            <span>25%</span>
+            <span>50%</span>
+            <span>75%</span>
+            <span>100%</span>
+          </div>
         </div>
 
-        <div>
-          <label className="block text-xs uppercase tracking-wide text-atelie-textoMuted mb-2">
-            Etapa de entrega
-          </label>
-          <select
-            name="entrega_status"
-            defaultValue={obra.entrega_status ?? ''}
-            className="w-full bg-atelie-fundo border border-atelie-borda rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-atelie-dourado/60"
-          >
-            <option value="">No ateliê (não iniciada)</option>
-            {ENTREGA_OPCOES.map((e) => (
-              <option key={e} value={e}>{e}</option>
-            ))}
-          </select>
-          <p className="text-xs text-atelie-textoMuted mt-1">
-            Mostrado ao cliente como o segundo slider, após a pintura ser concluída.
-          </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs uppercase tracking-wide text-atelie-textoMuted mb-2">Etapa de entrega</label>
+            <select
+              name="entrega_status"
+              defaultValue={obra.entrega_status ?? ''}
+              className="input-atelie"
+            >
+              <option value="">Sem etapa de entrega</option>
+              {ENTREGA_OPCOES.map((etapa) => (
+                <option key={etapa} value={etapa}>{etapa}</option>
+              ))}
+            </select>
+            <p className="text-[10px] text-atelie-textoMuted mt-1.5">
+              Exibido como segundo progresso no acompanhamento do cliente.
+            </p>
+          </div>
+          <div>
+            <label className="block text-xs uppercase tracking-wide text-atelie-textoMuted mb-2">Rótulos</label>
+            <input
+              name="rotulos"
+              defaultValue={(obra.rotulos ?? []).join(', ')}
+              placeholder="Ex.: Retrato, Óleo, Premiada"
+              className="input-atelie"
+            />
+            <p className="text-[10px] text-atelie-textoMuted mt-1.5">Separe por vírgula.</p>
+          </div>
         </div>
 
         <div>
@@ -94,7 +212,7 @@ export function TabVisaoGeral({ obra }: { obra: Obra }) {
             type="date"
             name="estimativa_conclusao"
             defaultValue={obra.estimativa_conclusao ?? ''}
-            className="w-full bg-atelie-fundo border border-atelie-borda rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-atelie-dourado/60"
+            className="input-atelie"
           />
         </div>
 
@@ -104,7 +222,7 @@ export function TabVisaoGeral({ obra }: { obra: Obra }) {
             name="descricao"
             rows={3}
             defaultValue={obra.descricao ?? ''}
-            className="w-full bg-atelie-fundo border border-atelie-borda rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-atelie-dourado/60"
+            className="input-atelie resize-none"
           />
         </div>
 
@@ -117,175 +235,156 @@ export function TabVisaoGeral({ obra }: { obra: Obra }) {
             rows={2}
             defaultValue={obra.observacoes ?? ''}
             placeholder="Texto livre exibido na página de acompanhamento"
-            className="w-full bg-atelie-fundo border border-atelie-borda rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-atelie-dourado/60"
+            className="input-atelie resize-none"
           />
         </div>
 
-        <label className="flex items-center gap-2 text-sm text-atelie-textoMuted">
-          <input type="checkbox" name="exibir_custos" defaultChecked={obra.exibir_custos} className="accent-atelie-dourado" />
+        <label className="flex items-center gap-2 text-sm text-atelie-textoMuted cursor-pointer hover:text-atelie-texto transition-colors">
+          <input type="checkbox" name="exibir_custos" defaultChecked={obra.exibir_custos} className="accent-atelie-dourado w-4 h-4" />
           Exibir materiais e custos para o cliente
         </label>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 pt-2 border-t border-atelie-borda">
           <button
             type="submit"
             disabled={salvando}
-            className="bg-atelie-dourado text-atelie-fundo font-medium rounded-md px-5 py-2.5 hover:bg-atelie-douradoClaro transition-colors disabled:opacity-50"
+            className="btn-dourado px-5 py-2.5"
           >
-            {salvando ? 'Salvando...' : 'Salvar alterações'}
+            {salvando ? (
+              <span className="flex items-center gap-2">
+                <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                Salvando...
+              </span>
+            ) : 'Salvar alterações'}
           </button>
-          {salvo && <span className="text-emerald-400 text-sm">Salvo com sucesso.</span>}
+          {salvo && (
+            <span className="flex items-center gap-1 text-emerald-400 text-sm animate-fadeIn">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              Salvo com sucesso.
+            </span>
+          )}
+          {statusModificado && (
+            <span className="text-atelie-douradoClaro text-xs animate-fadeIn">
+              Status alterado para <strong>{statusAtual}</strong>
+            </span>
+          )}
         </div>
       </form>
 
-      <RotulosEditor obra={obra} />
-      <ReferenciaEditor obra={obra} />
-    </div>
-  );
-}
-
-function Campo({
-  label,
-  name,
-  type = 'text',
-  defaultValue,
-  step,
-  required,
-}: {
-  label: string;
-  name: string;
-  type?: string;
-  defaultValue?: string | number;
-  step?: string;
-  required?: boolean;
-}) {
-  return (
-    <div>
-      <label className="block text-xs uppercase tracking-wide text-atelie-textoMuted mb-2">{label}</label>
-      <input
-        name={name}
-        type={type}
-        step={step}
-        defaultValue={defaultValue}
-        required={required}
-        className="w-full bg-atelie-fundo border border-atelie-borda rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-atelie-dourado/60"
-      />
-    </div>
-  );
-}
-
-function RotulosEditor({ obra }: { obra: Obra }) {
-  const [rotulos, setRotulos] = useState<string[]>(obra.rotulos ?? []);
-  const [novo, setNovo] = useState('');
-  const [salvando, setSalvando] = useState(false);
-
-  async function salvar(lista: string[]) {
-    setSalvando(true);
-    await atualizarRotulosAction(obra.id, lista);
-    setSalvando(false);
-  }
-
-  function adicionar() {
-    const valor = novo.trim();
-    if (!valor || rotulos.includes(valor)) return;
-    const lista = [...rotulos, valor];
-    setRotulos(lista);
-    setNovo('');
-    salvar(lista);
-  }
-
-  function remover(rotulo: string) {
-    const lista = rotulos.filter((r) => r !== rotulo);
-    setRotulos(lista);
-    salvar(lista);
-  }
-
-  return (
-    <div className="bg-atelie-superficie border border-atelie-borda rounded-lg p-6 space-y-3">
-      <div className="flex items-center justify-between">
-        <h3 className="font-display text-lg">Rótulos internos</h3>
-        <span className="text-xs text-atelie-textoMuted">Ex: pagamento atrasado, prioridade</span>
-      </div>
-      <div className="flex flex-wrap gap-2">
-        {rotulos.length === 0 && <p className="text-atelie-textoMuted text-sm">Nenhum rótulo adicionado.</p>}
-        {rotulos.map((r) => (
-          <span
-            key={r}
-            className="inline-flex items-center gap-1.5 bg-atelie-dourado/15 border border-atelie-dourado/40 text-atelie-douradoClaro text-xs px-2.5 py-1 rounded-full"
-          >
-            {r}
-            <button
-              onClick={() => remover(r)}
-              className="hover:text-atelie-terracotaClaro transition-colors"
-              aria-label={`Remover rótulo ${r}`}
-            >
-              ✕
-            </button>
-          </span>
-        ))}
-      </div>
-      <div className="flex gap-2">
-        <input
-          value={novo}
-          onChange={(e) => setNovo(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault();
-              adicionar();
-            }
-          }}
-          placeholder="Adicionar rótulo..."
-          className="flex-1 bg-atelie-fundo border border-atelie-borda rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-atelie-dourado/60"
-        />
-        <button
-          onClick={adicionar}
-          disabled={!novo.trim() || salvando}
-          className="bg-atelie-dourado text-atelie-fundo rounded-md px-4 py-2 text-sm font-medium hover:bg-atelie-douradoClaro transition-colors disabled:opacity-50"
-        >
-          Adicionar
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function ReferenciaEditor({ obra }: { obra: Obra }) {
-  const [enviando, setEnviando] = useState(false);
-  const [erro, setErro] = useState<string | null>(null);
-
-  async function handleSubmit(formData: FormData) {
-    setEnviando(true);
-    setErro(null);
-    const resultado = await atualizarReferenciaAction(obra.id, formData);
-    if (resultado?.erro) setErro(resultado.erro);
-    setEnviando(false);
-  }
-
-  return (
-    <div className="bg-atelie-superficie border border-atelie-borda rounded-lg p-6 space-y-3">
-      <h3 className="font-display text-lg">Imagem de referência</h3>
-      {obra.imagem_referencia_url && (
-        <div className="relative w-44 aspect-[4/3] rounded-md overflow-hidden border border-atelie-borda">
-          <Image src={obra.imagem_referencia_url} alt="Referência" fill className="object-cover" />
+      {/* Modal de confirmação de status */}
+      {confirmarStatus && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fadeIn" onClick={() => setConfirmarStatus(null)}>
+          <div className="bg-atelie-superficie border border-atelie-borda rounded-lg p-6 max-w-sm mx-4 shadow-dourado-lg animate-scaleIn" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="font-display text-lg">Alterar status</h3>
+              <button onClick={() => setConfirmarStatus(null)} className="text-atelie-textoMuted hover:text-atelie-texto transition-colors" aria-label="Fechar">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <p className="text-sm text-atelie-textoMuted mb-4">
+              Mudar de <strong>{obra.status_atual}</strong> para <strong>{confirmarStatus}</strong>?
+              <br />Isso será registrado na linha do tempo do cliente.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setConfirmarStatus(null)}
+                className="btn-outline px-4 py-2 text-sm"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => {
+                  setStatusAtual(confirmarStatus);
+                  setConfirmarStatus(null);
+                  formRef.current?.requestSubmit();
+                }}
+                className="btn-dourado px-4 py-2 text-sm"
+              >
+                Confirmar mudança
+              </button>
+            </div>
+          </div>
         </div>
       )}
-      <form action={handleSubmit} className="space-y-3">
-        <input
-          type="file"
-          name="imagem_referencia"
-          accept="image/*"
-          required
-          className="w-full text-sm text-atelie-textoMuted file:mr-3 file:py-2 file:px-4 file:rounded-md file:border-0 file:bg-atelie-dourado/20 file:text-atelie-douradoClaro file:cursor-pointer"
-        />
-        {erro && <p className="text-atelie-terracotaClaro text-sm">{erro}</p>}
+
+      {/* Trocar imagem de referência */}
+      <div className="bg-atelie-superficie border border-atelie-borda rounded-lg p-6 space-y-4">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <p className="text-xs uppercase tracking-wide text-atelie-textoMuted mb-1">Imagem de referência</p>
+            <p className="text-sm text-atelie-textoMuted">Substitua a foto que inspirou a obra.</p>
+          </div>
+          {obra.imagem_referencia_url && (
+            <div className="w-24 h-16 rounded-md overflow-hidden border border-atelie-borda shrink-0">
+              <img src={obra.imagem_referencia_url} alt="Referência atual" className="w-full h-full object-cover" />
+            </div>
+          )}
+        </div>
+        <form action={handleTrocarReferencia} className="flex items-center gap-3 flex-wrap">
+          <input
+            name="referencia"
+            type="file"
+            accept="image/*"
+            className="text-sm text-atelie-textoMuted file:mr-3 file:px-3 file:py-1.5 file:rounded-md file:border file:border-atelie-borda file:bg-atelie-superficie2 file:text-atelie-texto file:text-xs file:cursor-pointer file:hover:border-atelie-dourado/40 file:transition-colors"
+          />
+          <button type="submit" disabled={salvandoReferencia} className="btn-outline px-4 py-2 text-sm">
+            {salvandoReferencia ? 'Enviando...' : 'Trocar referência'}
+          </button>
+          {erroReferencia && <span className="text-atelie-terracotaClaro text-sm">{erroReferencia}</span>}
+        </form>
+      </div>
+
+      {/* Excluir obra */}
+      <div className="bg-atelie-superficie border border-atelie-terracota/30 rounded-lg p-6">
+        <p className="text-xs uppercase tracking-wide text-atelie-terracotaClaro mb-1">Zona de perigo</p>
+        <p className="text-sm text-atelie-textoMuted mb-4">
+          Excluir apaga a obra, fotos, histórico, comentários e materiais. Não é possível desfazer.
+        </p>
         <button
-          type="submit"
-          disabled={enviando}
-          className="bg-atelie-dourado text-atelie-fundo rounded-md px-4 py-2 text-sm font-medium hover:bg-atelie-douradoClaro transition-colors disabled:opacity-50"
+          onClick={() => setConfirmarExclusao(true)}
+          className="bg-atelie-terracota/20 border border-atelie-terracota/50 text-atelie-terracotaClaro px-4 py-2 text-sm rounded-md hover:bg-atelie-terracota/30 transition-colors"
         >
-          {enviando ? 'Enviando...' : 'Substituir referência'}
+          Excluir obra
         </button>
-      </form>
+      </div>
+
+      {/* Modal de confirmação de exclusão */}
+      {confirmarExclusao && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fadeIn"
+          onClick={() => setConfirmarExclusao(false)}
+        >
+          <div
+            className="bg-atelie-superficie border border-atelie-borda rounded-lg p-6 max-w-sm mx-4 shadow-dourado-lg animate-scaleIn"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="font-display text-lg mb-2">Excluir obra?</h3>
+            <p className="text-sm text-atelie-textoMuted mb-4">
+              Tem certeza que deseja excluir <strong>{obra.titulo}</strong>?
+              <br />Todos os dados serão removidos permanentemente.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button onClick={() => setConfirmarExclusao(false)} className="btn-outline px-4 py-2 text-sm">
+                Cancelar
+              </button>
+              <button
+                onClick={handleExcluir}
+                disabled={excluindo}
+                className="bg-atelie-terracota text-white px-4 py-2 text-sm rounded-md hover:bg-atelie-terracota/80 transition-colors disabled:opacity-50"
+              >
+                {excluindo ? 'Excluindo...' : 'Excluir'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

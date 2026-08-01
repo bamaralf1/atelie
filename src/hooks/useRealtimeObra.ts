@@ -2,21 +2,16 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { criarClientBrowser } from '@/lib/supabase/client';
-import { Obra, Material, HistoricoStatus, FotoProgresso } from '@/lib/types';
+import { Obra, Material, HistoricoStatus, FotoProgresso, Comentario } from '@/lib/types';
 
 interface DadosObraCompletos {
   obra: Obra;
   materiais: Material[];
   historico: HistoricoStatus[];
   fotos: FotoProgresso[];
+  comentarios: Comentario[];
 }
 
-/**
- * Mantém os dados da obra sincronizados em tempo real via Supabase Realtime.
- * Sempre que qualquer tabela relacionada muda no banco, refaz a busca completa
- * dessa obra e atualiza o estado local — a página do cliente reflete a mudança
- * sem necessidade de recarregar (F5).
- */
 export function useRealtimeObra(dadosIniciais: DadosObraCompletos) {
   const [dados, setDados] = useState(dadosIniciais);
   const [notificacao, setNotificacao] = useState<string | null>(null);
@@ -25,11 +20,12 @@ export function useRealtimeObra(dadosIniciais: DadosObraCompletos) {
     const supabase = criarClientBrowser();
     const obraId = dados.obra.id;
 
-    const [{ data: obra }, { data: materiais }, { data: historico }, { data: fotos }] = await Promise.all([
+    const [{ data: obra }, { data: materiais }, { data: historico }, { data: fotos }, { data: comentarios }] = await Promise.all([
       supabase.from('obras').select('*').eq('id', obraId).single(),
       supabase.from('materiais').select('*').eq('obra_id', obraId).order('created_at', { ascending: false }),
       supabase.from('historico_status').select('*').eq('obra_id', obraId).order('data_mudanca', { ascending: true }),
       supabase.from('fotos_progresso').select('*').eq('obra_id', obraId).order('data_upload', { ascending: false }),
+      supabase.from('comentarios').select('*').eq('obra_id', obraId).order('criado_em', { ascending: true }),
     ]);
 
     if (obra) {
@@ -38,6 +34,7 @@ export function useRealtimeObra(dadosIniciais: DadosObraCompletos) {
         materiais: (materiais as Material[]) ?? [],
         historico: (historico as HistoricoStatus[]) ?? [],
         fotos: (fotos as FotoProgresso[]) ?? [],
+        comentarios: (comentarios as Comentario[]) ?? [],
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -62,6 +59,9 @@ export function useRealtimeObra(dadosIniciais: DadosObraCompletos) {
         recarregar();
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'materiais', filter: `obra_id=eq.${obraId}` }, () => {
+        recarregar();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'comentarios', filter: `obra_id=eq.${obraId}` }, () => {
         recarregar();
       })
       .subscribe();

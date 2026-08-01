@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import { criarClientServidor } from '@/lib/supabase/server';
 import { ClienteView } from './ClienteView';
-import { Obra, Material, HistoricoStatus, FotoProgresso } from '@/lib/types';
+import { Obra, Material, HistoricoStatus, FotoProgresso, Comentario } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,13 +14,13 @@ export default async function AcompanharObraPage({ params }: { params: { token: 
     .eq('token_acesso', params.token)
     .single();
 
-  // Token inválido ou obra removida → página 404 personalizada (item 5, segurança).
   if (!obra) notFound();
 
-  const [{ data: materiais }, { data: historico }, { data: fotos }] = await Promise.all([
+  const [{ data: materiais }, { data: historico }, { data: fotos }, { data: comentarios }] = await Promise.all([
     supabase.from('materiais').select('*').eq('obra_id', obra.id).order('created_at', { ascending: false }),
     supabase.from('historico_status').select('*').eq('obra_id', obra.id).order('data_mudanca', { ascending: true }),
     supabase.from('fotos_progresso').select('*').eq('obra_id', obra.id).order('data_upload', { ascending: false }),
+    supabase.from('comentarios').select('*').eq('obra_id', obra.id).order('criado_em', { ascending: true }),
   ]);
 
   return (
@@ -29,6 +29,7 @@ export default async function AcompanharObraPage({ params }: { params: { token: 
       materiaisIniciais={(materiais as Material[]) ?? []}
       historicoInicial={(historico as HistoricoStatus[]) ?? []}
       fotosIniciais={(fotos as FotoProgresso[]) ?? []}
+      comentariosIniciais={(comentarios as Comentario[]) ?? []}
     />
   );
 }

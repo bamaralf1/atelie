@@ -2,36 +2,54 @@
 
 import { criarClientAdmin } from '@/lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
-import { redirect } from 'next/navigation';
 import { v4 as uuidv4 } from 'uuid';
+
+async function apagarArquivoStorage(url: string | null) {
+  if (!url) return;
+  try {
+    const partes = new URL(url).pathname.split('/');
+    const idx = partes.indexOf('public');
+    if (idx < 0 || partes.length <= idx + 1) return;
+    const bucket = partes[idx + 1];
+    const caminho = partes.slice(idx + 2).join('/');
+    if (!caminho) return;
+    const supabase = criarClientAdmin();
+    await supabase.storage.from(bucket).remove([caminho]);
+  } catch {}
+}
 
 /** Atualiza os dados gerais da obra (aba "Visão Geral"). O trigger no banco
  * registra automaticamente o histórico quando status_atual muda. */
 export async function atualizarVisaoGeralAction(obraId: string, formData: FormData) {
   const supabase = criarClientAdmin();
 
-  const titulo = (formData.get('titulo') as string) || null;
-  const orcamento_total = parseFloat((formData.get('orcamento_total') as string) || '0') || 0;
-  const entrega_status = (formData.get('entrega_status') as string) || null;
   const status_atual = formData.get('status_atual') as string;
   const percentual_conclusao = parseInt((formData.get('percentual_conclusao') as string) || '0', 10);
   const estimativa_conclusao = (formData.get('estimativa_conclusao') as string) || null;
   const descricao = (formData.get('descricao') as string) || null;
   const observacoes = (formData.get('observacoes') as string) || null;
   const exibir_custos = formData.get('exibir_custos') === 'on';
+  const titulo = (formData.get('titulo') as string)?.trim() || null;
+  const orcamento_total = parseFloat((formData.get('orcamento_total') as string) || '0') || 0;
+  const entrega_status = (formData.get('entrega_status') as string) || null;
+  const rotulos = ((formData.get('rotulos') as string) || '')
+    .split(',')
+    .map((r) => r.trim())
+    .filter(Boolean);
 
   const { error } = await supabase
     .from('obras')
     .update({
-      titulo,
-      orcamento_total,
-      entrega_status,
       status_atual,
       percentual_conclusao,
       estimativa_conclusao,
       descricao,
       observacoes,
       exibir_custos,
+      titulo,
+      orcamento_total,
+      entrega_status,
+      rotulos,
     })
     .eq('id', obraId);
 
@@ -43,8 +61,8 @@ export async function atualizarVisaoGeralAction(obraId: string, formData: FormDa
 export async function atualizarClienteAction(obraId: string, formData: FormData) {
   const supabase = criarClientAdmin();
 
-  const cliente_nome = (formData.get('cliente_nome') as string) || null;
-  const cliente_email = (formData.get('cliente_email') as string) || null;
+  const cliente_nome = (formData.get('cliente_nome') as string)?.trim() || null;
+  const cliente_email = (formData.get('cliente_email') as string)?.trim() || null;
 
   if (!cliente_nome) return { erro: 'Informe o nome do cliente.' };
 
@@ -57,56 +75,67 @@ export async function atualizarClienteAction(obraId: string, formData: FormData)
   return { erro: error?.message };
 }
 
-/** Substitui os rótulos internos da obra (ex: "pagamento atrasado"). */
-export async function atualizarRotulosAction(obraId: string, rotulos: string[]) {
-  const supabase = criarClientAdmin();
-
-  const limpos = rotulos.map((r) => r.trim()).filter(Boolean);
-  const { error } = await supabase
-    .from('obras')
-    .update({ rotulos: limpos })
-    .eq('id', obraId);
-
-  revalidatePath(`/admin/obras/${obraId}`);
-  return { erro: error?.message };
-}
-
-/** Substitui a imagem de referência inicial da obra. */
+/** Substitui a imagem de referência da obra. */
 export async function atualizarReferenciaAction(obraId: string, formData: FormData) {
   const supabase = criarClientAdmin();
 
-  const arquivo = formData.get('imagem_referencia') as File | null;
+  const arquivo = formData.get('referencia') as File | null;
   if (!arquivo || arquivo.size === 0) return { erro: 'Selecione uma imagem.' };
 
   const extensao = arquivo.name.split('.').pop();
-  const caminho = `referencia/${obraId}/${uuidv4()}.${extensao}`;
+  const caminho = `${obraId}/referencia-${uuidv4()}.${extensao}`;
 
   const { error: erroUpload } = await supabase.storage
     .from('referencias')
-    .upload(caminho, arquivo, { contentType: arquivo.type, upsert: false });
+    .upload(caminho, arquivo, { contentType: arquivo.type, upsert: true });
 
   if (erroUpload) return { erro: erroUpload.message };
 
   const { data: publicUrl } = supabase.storage.from('referencias').getPublicUrl(caminho);
+
+  const { data: obraAtual } = await supabase
+    .from('obras')
+    .select('imagem_referencia_url')
+    .eq('id', obraId)
+    .single();
 
   const { error } = await supabase
     .from('obras')
     .update({ imagem_referencia_url: publicUrl.publicUrl })
     .eq('id', obraId);
 
-  if (error) return { erro: error.message };
+  if (!error && obraAtual?.imagem_referencia_url) {
+    await apagarArquivoStorage(obraAtual.imagem_referencia_url);
+  }
 
   revalidatePath(`/admin/obras/${obraId}`);
-  return { erro: null };
+  return { erro: error?.message };
 }
 
-/** Exclui a obra e tudo que depende dela (materiais, histórico e fotos via
- * on delete cascade) e volta para o dashboard. */
+/** Exclui a obra e tudo associado (fotos, histórico, comentários, materiais). */
 export async function excluirObraAction(obraId: string) {
   const supabase = criarClientAdmin();
-  await supabase.from('obras').delete().eq('id', obraId);
+
+  const { data: obra } = await supabase
+    .from('obras')
+    .select('imagem_referencia_url')
+    .eq('id', obraId)
+    .single();
+  await apagarArquivoStorage(obra?.imagem_referencia_url ?? null);
+
+  const { data: fotos } = await supabase
+    .from('fotos_progresso')
+    .select('url_foto')
+    .eq('obra_id', obraId);
+  for (const f of fotos ?? []) {
+    await apagarArquivoStorage(f.url_foto);
+  }
+
+  const { error } = await supabase.from('obras').delete().eq('id', obraId);
+
   revalidatePath('/admin');
-  redirect('/admin');
+  revalidatePath(`/admin/obras/${obraId}`);
+  return { erro: error?.message };
 }
 
 /** Adiciona um material à obra. O custo total é recalculado por trigger. */

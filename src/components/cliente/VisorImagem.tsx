@@ -1,356 +1,192 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useState, useRef, useCallback, useEffect, WheelEvent, MouseEvent, TouchEvent } from 'react';
+import Image from 'next/image';
+import { ItemVisor } from '@/lib/types';
 import { formatarData } from '@/lib/utils';
 
-export interface ItemVisor {
-  id: string;
-  src: string;
-  legenda?: string | null;
-  etapa?: string | null;
-  data?: string | null;
-}
+const ZOOM_MIN = 1;
+const ZOOM_MAX = 4;
+const ZOOM_PASSO = 0.5;
+const SWIPE_THRESHOLD = 50;
 
-const ESCALA_MIN = 1;
-const ESCALA_MAX = 5;
-
-function limitarValor(valor: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, valor));
-}
-
-type Gesto =
-  | { tipo: 'pan'; x: number; y: number; offsetInicial: { x: number; y: number } }
-  | {
-      tipo: 'pinch';
-      distancia: number;
-      midInicial: { x: number; y: number };
-      escalaInicial: number;
-      offsetInicial: { x: number; y: number };
-    };
-
-/**
- * Modal em tela cheia para visualização interativa de fotos: permite dar zoom
- * (botões, roda do mouse, toque com pinça), arrastar para percorrer a imagem
- * e navegar entre fotos com as setas / teclado.
- */
-export function VisorImagem({
-  itens,
-  indiceInicial = 0,
-  onFechar,
-}: {
+interface VisorImagemProps {
   itens: ItemVisor[];
-  indiceInicial?: number;
+  indiceInicial: number;
   onFechar: () => void;
-}) {
+}
+
+export function VisorImagem({ itens, indiceInicial, onFechar }: VisorImagemProps) {
   const [indice, setIndice] = useState(indiceInicial);
-  const [escala, setEscala] = useState(1);
-  const [arrastando, setArrastando] = useState(false);
+  const [zoom, setZoom] = useState(1);
+  const [posicao, setPosicao] = useState({ x: 0, y: 0 });
+  const arrastandoRef = useRef(false);
+  const ultimaPosRef = useRef({ x: 0, y: 0 });
+  const containerRef = useRef<HTMLDivElement>(null);
+  const toqueInicialRef = useRef<{ x: number; y: number; tempo: number } | null>(null);
 
-  const imagemRef = useRef<HTMLDivElement>(null);
-  const pontosRef = useRef(new Map<number, { x: number; y: number }>());
-  const gestoRef = useRef<Gesto | null>(null);
-  const escalaRef = useRef(1);
-  const offsetRef = useRef({ x: 0, y: 0 });
+  const itemAtual = itens[indice];
 
-  const itemAtual = itens[limitarValor(indice, 0, itens.length - 1)];
-
-  const aplicarTransform = useCallback(() => {
-    if (imagemRef.current) {
-      imagemRef.current.style.transform = `translate(${offsetRef.current.x}px, ${offsetRef.current.y}px) scale(${escalaRef.current})`;
-    }
+  const resetarZoom = useCallback(() => {
+    setZoom(1);
+    setPosicao({ x: 0, y: 0 });
   }, []);
 
-  const limitarOffset = useCallback((off: { x: number; y: number }, es: number) => {
-    const maxX = Math.max(0, (window.innerWidth * (es - 1)) / 2);
-    const maxY = Math.max(0, (window.innerHeight * (es - 1)) / 2);
-    return {
-      x: limitarValor(off.x, -maxX, maxX),
-      y: limitarValor(off.y, -maxY, maxY),
-    };
-  }, []);
+  const fechar = useCallback(() => { onFechar(); resetarZoom(); }, [onFechar, resetarZoom]);
 
-  const redefinir = useCallback(() => {
-    escalaRef.current = 1;
-    offsetRef.current = { x: 0, y: 0 };
-    setEscala(1);
-    aplicarTransform();
-  }, [aplicarTransform]);
-
-  // Reset de zoom/pan ao trocar de foto.
-  useEffect(() => {
-    redefinir();
-  }, [indice, redefinir]);
-
-  const zoomNoPonto = useCallback(
-    (px: number, py: number, fator: number) => {
-      const nova = limitarValor(escalaRef.current * fator, ESCALA_MIN, ESCALA_MAX);
-      if (nova === escalaRef.current) return;
-
-      let off = { ...offsetRef.current };
-      if (nova === ESCALA_MIN) {
-        off = { x: 0, y: 0 };
-      } else {
-        off = {
-          x: px - ((px - off.x) * nova) / escalaRef.current,
-          y: py - ((py - off.y) * nova) / escalaRef.current,
-        };
-      }
-      off = limitarOffset(off, nova);
-      offsetRef.current = off;
-      escalaRef.current = nova;
-      setEscala(nova);
-      aplicarTransform();
+  const irPara = useCallback(
+    (novoIndice: number) => {
+      if (novoIndice < 0 || novoIndice >= itens.length) return;
+      setIndice(novoIndice);
+      resetarZoom();
     },
-    [aplicarTransform, limitarOffset]
+    [itens.length, resetarZoom]
   );
 
-  // Roda do mouse com zoom no cursor (listener não-passivo para permitir preventDefault).
-  useEffect(() => {
-    const noWheel = (e: WheelEvent) => {
-      e.preventDefault();
-      const fator = e.deltaY < 0 ? 1.18 : 1 / 1.18;
-      zoomNoPonto(e.clientX, e.clientY, fator);
-    };
-    const el = imagemRef.current?.parentElement;
-    el?.addEventListener('wheel', noWheel, { passive: false });
-    return () => el?.removeEventListener('wheel', noWheel);
-  }, [zoomNoPonto]);
-
-  function irPara(novoIndice: number) {
-    const i = limitarValor(novoIndice, 0, itens.length - 1);
-    setIndice(i);
-  }
-
-  // Teclado: Esc fecha, setas navegam.
-  useEffect(() => {
-    const aoTeclar = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onFechar();
-      if (e.key === 'ArrowLeft') irPara(indice - 1);
-      if (e.key === 'ArrowRight') irPara(indice + 1);
-    };
-    window.addEventListener('keydown', aoTeclar);
-    return () => window.removeEventListener('keydown', aoTeclar);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [onFechar, indice]);
-
-  // Trava o scroll da página enquanto o modal está aberto.
-  useEffect(() => {
-    const anterior = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = anterior;
-    };
+  const aplicarZoom = useCallback((delta: number) => {
+    setZoom((z) => {
+      const novo = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, z + delta));
+      if (novo === ZOOM_MIN) setPosicao({ x: 0, y: 0 });
+      return novo;
+    });
   }, []);
 
-  function aoPressionar(e: React.PointerEvent) {
-    const el = imagemRef.current;
-    if (!el) return;
-    el.setPointerCapture(e.pointerId);
-    pontosRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
-
-    if (pontosRef.current.size === 1) {
-      setArrastando(true);
-      gestoRef.current = {
-        tipo: 'pan',
-        x: e.clientX,
-        y: e.clientY,
-        offsetInicial: { ...offsetRef.current },
-      };
-    } else if (pontosRef.current.size === 2) {
-      const [p1, p2] = [...pontosRef.current.values()];
-      gestoRef.current = {
-        tipo: 'pinch',
-        distancia: Math.hypot(p2.x - p1.x, p2.y - p1.y),
-        midInicial: { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 },
-        escalaInicial: escalaRef.current,
-        offsetInicial: { ...offsetRef.current },
-      };
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') fechar();
+      else if (e.key === 'ArrowRight') irPara(indice + 1);
+      else if (e.key === 'ArrowLeft') irPara(indice - 1);
+      else if (e.key === '+' || e.key === '=') aplicarZoom(ZOOM_PASSO);
+      else if (e.key === '-') aplicarZoom(-ZOOM_PASSO);
+      else if (e.key === '0') resetarZoom();
     }
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [indice, fechar, irPara, aplicarZoom, resetarZoom]);
+
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = ''; };
+  }, []);
+
+  async function downloadFoto(url: string) {
+    try {
+      const res = await fetch(url);
+      const blob = await res.blob();
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `atelie-${indice + 1}.${blob.type.split('/')[1] || 'jpg'}`;
+      link.click();
+      URL.revokeObjectURL(link.href);
+    } catch {}
   }
 
-  function aoMover(e: React.PointerEvent) {
-    if (!pontosRef.current.has(e.pointerId)) return;
-    pontosRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    const g = gestoRef.current;
-    if (!g) return;
+  function handleWheel(e: WheelEvent) { e.preventDefault(); aplicarZoom(e.deltaY < 0 ? ZOOM_PASSO : -ZOOM_PASSO); }
 
-    if (g.tipo === 'pan') {
-      const novoOff = limitarOffset(
-        {
-          x: g.offsetInicial.x + (e.clientX - g.x),
-          y: g.offsetInicial.y + (e.clientY - g.y),
-        },
-        escalaRef.current
-      );
-      offsetRef.current = novoOff;
-      aplicarTransform();
-    } else if (g.tipo === 'pinch' && pontosRef.current.size === 2) {
-      const [p1, p2] = [...pontosRef.current.values()];
-      const midAtual = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 };
-      const distAtual = Math.hypot(p2.x - p1.x, p2.y - p1.y);
-      const nova = limitarValor(
-        (g.escalaInicial * distAtual) / g.distancia,
-        ESCALA_MIN,
-        ESCALA_MAX
-      );
-      const ancora = {
-        x: (g.midInicial.x - g.offsetInicial.x) / g.escalaInicial,
-        y: (g.midInicial.y - g.offsetInicial.y) / g.escalaInicial,
-      };
-      let novoOff = {
-        x: midAtual.x - ancora.x * nova,
-        y: midAtual.y - ancora.y * nova,
-      };
-      novoOff = limitarOffset(novoOff, nova);
-      offsetRef.current = novoOff;
-      escalaRef.current = nova;
-      setEscala(nova);
-      aplicarTransform();
+  function handleMouseDown(e: MouseEvent) {
+    if (zoom > 1) { arrastandoRef.current = true; ultimaPosRef.current = { x: e.clientX, y: e.clientY }; }
+  }
+  function handleMouseMove(e: MouseEvent) {
+    if (!arrastandoRef.current) return;
+    const dx = e.clientX - ultimaPosRef.current.x;
+    const dy = e.clientY - ultimaPosRef.current.y;
+    ultimaPosRef.current = { x: e.clientX, y: e.clientY };
+    setPosicao((p) => ({ x: p.x + dx, y: p.y + dy }));
+  }
+  function handleMouseUp() { arrastandoRef.current = false; }
+
+  function handleTouchStart(e: TouchEvent) {
+    if (e.touches.length === 1) {
+      toqueInicialRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY, tempo: Date.now() };
+      if (zoom > 1) { arrastandoRef.current = true; ultimaPosRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY }; }
     }
   }
-
-  function aoSoltar(e: React.PointerEvent) {
-    pontosRef.current.delete(e.pointerId);
-    if (pontosRef.current.size === 1) {
-      const [p] = [...pontosRef.current.values()];
-      gestoRef.current = {
-        tipo: 'pan',
-        x: p.x,
-        y: p.y,
-        offsetInicial: { ...offsetRef.current },
-      };
-      setArrastando(true);
-    } else {
-      gestoRef.current = null;
-      setArrastando(false);
+  function handleTouchMove(e: TouchEvent) {
+    if (arrastandoRef.current && zoom > 1 && e.touches.length === 1) {
+      const dx = e.touches[0].clientX - ultimaPosRef.current.x;
+      const dy = e.touches[0].clientY - ultimaPosRef.current.y;
+      ultimaPosRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      setPosicao((p) => ({ x: p.x + dx, y: p.y + dy }));
     }
   }
-
-  function aoDuploToque() {
-    if (escalaRef.current > 1) {
-      redefinir();
-    } else {
-      zoomNoPonto(window.innerWidth / 2, window.innerHeight / 2, 2.5);
+  function handleTouchEnd(e: TouchEvent) {
+    arrastandoRef.current = false;
+    if (toqueInicialRef.current && zoom === 1) {
+      const dx = e.changedTouches[0].clientX - toqueInicialRef.current.x;
+      const dt = Date.now() - toqueInicialRef.current.tempo;
+      if (Math.abs(dx) > SWIPE_THRESHOLD && dt < 500) {
+        if (dx < 0) irPara(indice + 1);
+        else irPara(indice - 1);
+      }
     }
+    toqueInicialRef.current = null;
   }
 
-  const zoomCentral = (fator: number) =>
-    zoomNoPonto(window.innerWidth / 2, window.innerHeight / 2, fator);
+  function handleDoubleClick() {
+    if (zoom > 1) resetarZoom();
+    else aplicarZoom(ZOOM_PASSO * 2);
+  }
 
   if (!itemAtual) return null;
 
   return (
-    <div
-      className="fixed inset-0 z-50 bg-black/95 flex flex-col"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Visualizador de fotos"
-    >
-      {/* Barra superior */}
-      <div className="absolute top-0 inset-x-0 z-20 flex items-center justify-between p-4">
-        <button
-          onClick={onFechar}
-          className="flex items-center justify-center w-10 h-10 rounded-full bg-white/5 hover:bg-white/15 text-white text-xl transition-colors"
-          aria-label="Fechar"
-        >
-          ✕
-        </button>
-        {itens.length > 1 && (
-          <span className="text-white/70 text-sm font-mono">
-            {indice + 1} / {itens.length}
-          </span>
-        )}
-      </div>
-
-      {/* Área da imagem (zoom, pan, pinça) */}
-      <div
-        className="flex-1 relative overflow-hidden touch-none select-none"
-        style={{ cursor: arrastando ? 'grabbing' : 'grab' }}
-        onPointerDown={aoPressionar}
-        onPointerMove={aoMover}
-        onPointerUp={aoSoltar}
-        onPointerCancel={aoSoltar}
-        onDoubleClick={aoDuploToque}
-      >
-        <div
-          ref={imagemRef}
-          className="absolute inset-0 flex items-center justify-center will-change-transform"
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={itemAtual.src}
-            alt={itemAtual.legenda ?? 'Foto da obra'}
-            draggable={false}
-            className="max-w-full max-h-full object-contain select-none"
-          />
+    <div className="fixed inset-0 z-50 bg-black/95 flex flex-col select-none animate-fadeIn" role="dialog" aria-modal="true">
+      <div className="flex items-center justify-between px-4 py-3 text-atelie-texto text-sm shrink-0">
+        <span className="text-atelie-textoMuted font-mono">{indice + 1} / {itens.length}</span>
+        <div className="flex items-center gap-2">
+          <button onClick={() => aplicarZoom(-ZOOM_PASSO)} disabled={zoom <= ZOOM_MIN} aria-label="Diminuir zoom"
+            className="w-8 h-8 rounded-md border border-atelie-borda hover:border-atelie-dourado/60 disabled:opacity-30 flex items-center justify-center transition-colors">−</button>
+          <span className="text-atelie-textoMuted font-mono w-12 text-center">{Math.round(zoom * 100)}%</span>
+          <button onClick={() => aplicarZoom(ZOOM_PASSO)} disabled={zoom >= ZOOM_MAX} aria-label="Aumentar zoom"
+            className="w-8 h-8 rounded-md border border-atelie-borda hover:border-atelie-dourado/60 disabled:opacity-30 flex items-center justify-center transition-colors">+</button>
+          {zoom > 1 && <button onClick={resetarZoom} className="text-xs text-atelie-douradoClaro hover:underline">Restaurar</button>}
+          <button onClick={() => downloadFoto(itemAtual.url)} aria-label="Baixar"
+            className="w-8 h-8 rounded-md border border-atelie-borda hover:border-atelie-dourado/60 flex items-center justify-center transition-colors">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+          </button>
+          <button onClick={fechar} aria-label="Fechar"
+            className="w-8 h-8 rounded-md border border-atelie-borda hover:border-atelie-terracota/60 flex items-center justify-center ml-2 transition-colors">✕</button>
         </div>
       </div>
 
-      {/* Navegação entre fotos */}
+      <div ref={containerRef}
+        className={`relative flex-1 overflow-hidden flex items-center justify-center ${zoom > 1 ? (arrastandoRef.current ? 'cursor-grabbing' : 'cursor-grab') : 'cursor-zoom-in'}`}
+        onWheel={handleWheel} onMouseDown={handleMouseDown} onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp}
+        onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd}
+        onDoubleClick={handleDoubleClick}>
+        {indice > 0 && (
+          <button onClick={(e) => { e.stopPropagation(); irPara(indice - 1); }}
+            className="absolute left-3 z-10 text-atelie-texto text-3xl w-10 h-10 rounded-full bg-black/40 hover:bg-atelie-dourado/20 hover:text-atelie-dourado flex items-center justify-center backdrop-blur-sm transition-all">‹</button>
+        )}
+        {indice < itens.length - 1 && (
+          <button onClick={(e) => { e.stopPropagation(); irPara(indice + 1); }}
+            className="absolute right-3 z-10 text-atelie-texto text-3xl w-10 h-10 rounded-full bg-black/40 hover:bg-atelie-dourado/20 hover:text-atelie-dourado flex items-center justify-center backdrop-blur-sm transition-all">›</button>
+        )}
+        <div className="relative w-full h-full max-w-5xl max-h-[75vh] mx-auto"
+          style={{ transform: `translate(${posicao.x}px, ${posicao.y}px) scale(${zoom})`, transition: arrastandoRef.current ? 'none' : 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)' }}>
+          <Image src={itemAtual.url} alt={itemAtual.legenda ?? ''} fill className="object-contain pointer-events-none" draggable={false} priority />
+        </div>
+      </div>
+
+      <div className="text-center py-2 shrink-0">
+        {itemAtual.etapa && <p className="text-atelie-douradoClaro font-medium text-sm">{itemAtual.etapa}</p>}
+        {itemAtual.legenda && <p className="text-atelie-textoMuted text-sm">{itemAtual.legenda}</p>}
+        {itemAtual.data && <p className="text-atelie-textoMuted text-xs mt-1">{formatarData(itemAtual.data)}</p>}
+      </div>
+
       {itens.length > 1 && (
-        <>
-          {indice > 0 && (
-            <button
-              onClick={() => irPara(indice - 1)}
-              onPointerDown={(e) => e.stopPropagation()}
-              className="absolute left-3 top-1/2 -translate-y-1/2 z-20 flex items-center justify-center w-11 h-11 rounded-full bg-white/5 hover:bg-white/15 text-white text-3xl transition-colors"
-              aria-label="Foto anterior"
-            >
-              ‹
+        <div className="flex gap-2 px-4 pb-4 overflow-x-auto shrink-0 justify-center">
+          {itens.map((item, i) => (
+            <button key={item.id} onClick={() => irPara(i)}
+              className={`relative w-14 h-14 shrink-0 rounded-md overflow-hidden border-2 transition-all duration-200 ${i === indice ? 'border-atelie-dourado shadow-dourado' : 'border-transparent opacity-50 hover:opacity-100'}`}>
+              <Image src={item.url} alt="" fill className="object-cover" />
             </button>
-          )}
-          {indice < itens.length - 1 && (
-            <button
-              onClick={() => irPara(indice + 1)}
-              onPointerDown={(e) => e.stopPropagation()}
-              className="absolute right-3 top-1/2 -translate-y-1/2 z-20 flex items-center justify-center w-11 h-11 rounded-full bg-white/5 hover:bg-white/15 text-white text-3xl transition-colors"
-              aria-label="Próxima foto"
-            >
-              ›
-            </button>
-          )}
-        </>
+          ))}
+        </div>
       )}
-
-      {/* Controles de zoom */}
-      <div className="absolute bottom-16 inset-x-0 z-20 flex items-center justify-center gap-2">
-        <button
-          onClick={() => zoomCentral(1 / 1.5)}
-          onPointerDown={(e) => e.stopPropagation()}
-          className="flex items-center justify-center w-10 h-10 rounded-full bg-white/5 hover:bg-white/15 text-white text-xl transition-colors"
-          aria-label="Diminuir zoom"
-        >
-          −
-        </button>
-        <button
-          onClick={redefinir}
-          className="flex items-center justify-center h-10 px-3 rounded-full bg-white/5 hover:bg-white/15 text-white text-sm font-mono transition-colors"
-          aria-label="Redefinir zoom"
-        >
-          {Math.round(escala * 100)}%
-        </button>
-        <button
-          onClick={() => zoomCentral(1.5)}
-          onPointerDown={(e) => e.stopPropagation()}
-          className="flex items-center justify-center w-10 h-10 rounded-full bg-white/5 hover:bg-white/15 text-white text-xl transition-colors"
-          aria-label="Aumentar zoom"
-        >
-          +
-        </button>
-      </div>
-
-      {/* Legenda */}
-      <div className="px-4 pb-8 pt-2 text-center">
-        {itemAtual.etapa && (
-          <p className="text-atelie-douradoClaro font-medium text-sm">{itemAtual.etapa}</p>
-        )}
-        {itemAtual.legenda && (
-          <p className="text-white/70 text-sm mt-0.5">{itemAtual.legenda}</p>
-        )}
-        {itemAtual.data && (
-          <p className="text-white/40 text-xs mt-1">{formatarData(itemAtual.data)}</p>
-        )}
-      </div>
     </div>
   );
 }

@@ -24,6 +24,8 @@ create table if not exists obras (
   exibir_custos boolean not null default false,
   imagem_referencia_url text,
   imagem_obra_atual_url text,
+  entrega_status text,
+  rotulos text[] not null default '{}',
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -31,36 +33,12 @@ create table if not exists obras (
 comment on column obras.status_atual is
   'Um de: Esboço, Imprimatura, Blocagem, Pintura, Detalhamento final, Concluída';
 
--- ---------------------------------------------------------
--- Migração: novas colunas de entrega e de rótulos internos
--- ---------------------------------------------------------
+comment on column obras.entrega_status is
+  'Um de: Secagem, Embalada, Enviada (opcional, fase pós-conclusão)';
+
+-- Migração para bancos já existentes (idempotente)
 alter table obras add column if not exists entrega_status text;
 alter table obras add column if not exists rotulos text[] not null default '{}';
-
-comment on column obras.entrega_status is
-  'Um de: Secagem, Embalada, Enviada. NULL = obra ainda no ateliê.';
-comment on column obras.rotulos is
-  'Rótulos internos do artista (ex: "pagamento atrasado", "prioridade").';
-
--- Renomeia os status antigos para os novos nomes (mapeamento posicional),
--- tanto na obra quanto no histórico da linha do tempo.
-update obras set status_atual = case status_atual
-  when 'Pintura em andamento' then 'Blocagem'
-  when 'Retoques finais' then 'Pintura'
-  else status_atual
-end;
-
-update historico_status set status_novo = case status_novo
-  when 'Pintura em andamento' then 'Blocagem'
-  when 'Retoques finais' then 'Pintura'
-  else status_novo
-end;
-
-update historico_status set status_anterior = case status_anterior
-  when 'Pintura em andamento' then 'Blocagem'
-  when 'Retoques finais' then 'Pintura'
-  else status_anterior
-end;
 
 -- ---------------------------------------------------------
 -- Materiais utilizados em cada obra
@@ -153,12 +131,24 @@ after insert or update on obras
 for each row execute procedure trg_registrar_historico_status();
 
 -- ---------------------------------------------------------
+-- Comentários do cliente em cada obra
+-- ---------------------------------------------------------
+create table if not exists comentarios (
+  id uuid primary key default uuid_generate_v4(),
+  obra_id uuid not null references obras(id) on delete cascade,
+  autor text not null default 'cliente' check (autor in ('cliente', 'artista')),
+  texto text not null,
+  criado_em timestamptz not null default now()
+);
+
+-- ---------------------------------------------------------
 -- Índices úteis
 -- ---------------------------------------------------------
 create index if not exists idx_obras_token on obras(token_acesso);
 create index if not exists idx_materiais_obra on materiais(obra_id);
 create index if not exists idx_historico_obra on historico_status(obra_id);
 create index if not exists idx_fotos_obra on fotos_progresso(obra_id);
+create index if not exists idx_comentarios_obra on comentarios(obra_id);
 
 -- ---------------------------------------------------------
 -- Row Level Security (RLS)
@@ -170,6 +160,7 @@ alter table obras enable row level security;
 alter table materiais enable row level security;
 alter table historico_status enable row level security;
 alter table fotos_progresso enable row level security;
+alter table comentarios enable row level security;
 
 -- Leitura pública (necessária para a página /acompanhar/[token] e Realtime)
 drop policy if exists "Leitura publica obras" on obras;
@@ -183,6 +174,12 @@ create policy "Leitura publica historico" on historico_status for select using (
 
 drop policy if exists "Leitura publica fotos" on fotos_progresso;
 create policy "Leitura publica fotos" on fotos_progresso for select using (true);
+
+drop policy if exists "Leitura publica comentarios" on comentarios;
+create policy "Leitura publica comentarios" on comentarios for select using (true);
+
+drop policy if exists "Insercao publica comentarios" on comentarios;
+create policy "Insercao publica comentarios" on comentarios for insert with check (true);
 
 -- Nenhuma policy de INSERT/UPDATE/DELETE é criada para a role "anon":
 -- por padrão, com RLS ativo e sem policy correspondente, essas operações
@@ -209,22 +206,25 @@ drop policy if exists "Leitura publica progresso" on storage.objects;
 create policy "Leitura publica progresso" on storage.objects
   for select using (bucket_id = 'progresso');
 
--- Habilitar Realtime nas tabelas usadas pela página do cliente.
--- (DO block para compatibilidade com todas as versões do Postgres, já que
--- "add table if not exists" só existe a partir do PostgreSQL 15.)
-do $$
-declare
-  t text;
-begin
-  foreach t in array array['obras','historico_status','fotos_progresso','materiais']
-  loop
-    if not exists (
-      select 1 from pg_publication_tables
-      where pubname = 'supabase_realtime'
-        and schemaname = 'public'
-        and tablename = t
-    ) then
-      execute format('alter publication supabase_realtime add table %I', t);
-    end if;
-  end loop;
+-- Habilitar Realtime nas tabelas usadas pela página do cliente
+-- (usa DO block para ignorar se já for membro da publicação)
+do $$ begin
+  alter publication supabase_realtime add table obras;
+exception when duplicate_object then null;
+end $$;
+do $$ begin
+  alter publication supabase_realtime add table historico_status;
+exception when duplicate_object then null;
+end $$;
+do $$ begin
+  alter publication supabase_realtime add table fotos_progresso;
+exception when duplicate_object then null;
+end $$;
+do $$ begin
+  alter publication supabase_realtime add table materiais;
+exception when duplicate_object then null;
+end $$;
+do $$ begin
+  alter publication supabase_realtime add table comentarios;
+exception when duplicate_object then null;
 end $$;

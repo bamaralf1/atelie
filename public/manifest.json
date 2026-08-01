@@ -1,0 +1,12 @@
+{
+  "name": "Atelier Bruno Amaral — Acompanhamento de Obras",
+  "short_name": "Atelier BA",
+  "description": "Acompanhe em tempo real o andamento da sua pintura a óleo.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0E0D0C",
+  "theme_color": "#C6A15B",
+  "icons": [
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}
