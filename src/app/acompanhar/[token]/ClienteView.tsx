@@ -328,7 +328,7 @@ export function ClienteView({
       </nav>
 
       {/* ===== HERO ===== */}
-      <section ref={heroRef} className="relative min-h-[80vh] sm:min-h-[75vh] flex items-end justify-center pb-16 sm:pb-20 px-6 overflow-hidden">
+      <section ref={heroRef} className="relative min-h-[55vh] sm:min-h-[62vh] flex items-end justify-center pb-12 sm:pb-16 px-6 overflow-hidden">
         {/* Background com parallax */}
         {bgImg ? (
           <div className="absolute inset-0" style={{ transform: `translateY(${heroBgY}px)` }}>
@@ -424,7 +424,7 @@ export function ClienteView({
             </div>
 
             {/* Milestones */}
-            <div className="relative mb-8 bg-gradient-to-br from-atelie-dourado/[0.08] to-transparent rounded-3xl border border-atelie-dourado/20 p-5 sm:p-7 shadow-[0_0_40px_rgba(198,161,91,0.05)] overflow-hidden">
+            <div className="relative mb-8 bg-gradient-to-br from-atelie-dourado/[0.08] to-transparent rounded-3xl border border-atelie-dourado/20 p-5 sm:p-7 shadow-[0_0_40px_rgba(198,161,91,0.05)]">
               <div className="absolute -top-px left-8 right-8 h-px bg-gradient-to-r from-transparent via-atelie-dourado/50 to-transparent" />
               <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(198,161,91,0.08),transparent_60%)] pointer-events-none" />
 
@@ -482,7 +482,7 @@ export function ClienteView({
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                               </svg>
                             ) : (
-                              <IconoEtapaMilestone etapa={m.label} className={`w-4 h-4 ${atual ? 'text-atelie-douradoClaro' : 'text-atelie-textoMuted/60'}`} />
+                              <IconoEtapaMilestone etapa={m.label} className={`w-4 h-4 ${atual ? 'text-atelie-douradoClaro' : 'text-atelie-textoMuted'}`} />
                             )}
                           </div>
                           <div className={`h-[3px] flex-1 rounded-full transition-all duration-700 ${i === milestones.length - 1 ? 'bg-transparent' : atingido ? 'bg-gradient-to-r from-atelie-dourado via-atelie-douradoClaro to-atelie-dourado bg-[length:200%_100%] animate-shimmer shadow-[0_0_8px_rgba(198,161,91,0.5)]' : 'bg-atelie-superficie2'}`} />
@@ -560,7 +560,7 @@ export function ClienteView({
                 )}
               </div>
 
-              <div className="relative bg-gradient-to-br from-emerald-400/[0.06] to-transparent rounded-2xl border border-emerald-400/10 p-4 sm:p-5 overflow-hidden">
+              <div className="relative bg-gradient-to-br from-emerald-400/[0.06] to-transparent rounded-2xl border border-emerald-400/10 p-4 sm:p-5">
                 <div className="absolute -top-px left-8 right-8 h-px bg-gradient-to-r from-transparent via-emerald-400/40 to-transparent" />
                 <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(52,211,153,0.06),transparent_60%)] pointer-events-none" />
 
@@ -619,7 +619,7 @@ export function ClienteView({
                             ) : (
                               <IconoEtapaEntrega
                                 etapa={etapa}
-                                className={`w-4 h-4 ${atual || proxima ? 'text-emerald-300' : 'text-atelie-textoMuted/60'}`}
+                                className={`w-4 h-4 ${atual || proxima ? 'text-emerald-300' : 'text-atelie-textoMuted'}`}
                               />
                             )}
                           </div>
