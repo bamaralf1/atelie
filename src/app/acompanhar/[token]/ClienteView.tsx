@@ -94,6 +94,13 @@ function IconoEtapaMilestone({ etapa, className }: { etapa: string; className?: 
   );
 }
 
+function gradienteProgresso(p: number): string {
+  if (p < 25) return 'from-atelie-textoMuted/60 via-zinc-500 to-zinc-400';
+  if (p < 50) return 'from-atelie-terracota via-atelie-dourado to-atelie-douradoClaro';
+  if (p < 75) return 'from-atelie-dourado via-atelie-douradoClaro to-atelie-douradoClaro';
+  return 'from-atelie-douradoClaro via-emerald-400 to-emerald-400';
+}
+
 const PARTICULAS = [
   { l: '8%', t: '30%', w: '3px', s: 6, d: 0 },
   { l: '16%', t: '62%', w: '2px', s: 8, d: 1.2 },
@@ -176,7 +183,7 @@ export function ClienteView({
       ([e]) => {
         if (!e.isIntersecting) return;
         obs.disconnect();
-        const alvo = obra.percentual_conclusao;
+        const alvo = Math.min(100, Math.max(0, obra.percentual_conclusao));
         const inicio = performance.now();
         const dur = 1400;
         const passo = (t: number) => {
@@ -217,12 +224,12 @@ export function ClienteView({
   const totalMateriais = materiais.reduce((s, m) => s + m.quantidade * m.custo_unitario, 0);
 
   const milestones = [
-    { label: 'Esboço', min: 0 },
-    { label: 'Imprimatura', min: 15 },
-    { label: 'Blocagem', min: 30 },
-    { label: 'Pintura', min: 60 },
-    { label: 'Detalhamento final', min: 80 },
-    { label: 'Concluída', min: 100 },
+    { label: 'Esboço', min: 0, desc: 'Linhas, composição e primeiras formas do desenho' },
+    { label: 'Imprimatura', min: 15, desc: 'Preparação da tela e base de fundo' },
+    { label: 'Blocagem', min: 30, desc: 'Manchas de cor e grandes volumes' },
+    { label: 'Pintura', min: 60, desc: 'Camadas de cor e modelagem dos detalhes' },
+    { label: 'Detalhamento final', min: 80, desc: 'Luz, textura e refinos finos' },
+    { label: 'Concluída', min: 100, desc: 'Acabamento, verniz e entrega' },
   ];
 
   const itensVisor: ItemVisor[] = [
@@ -242,6 +249,8 @@ export function ClienteView({
   const indiceEntregaAtual = indiceEntrega(obra.entrega_status);
   const pct = Math.min(100, Math.max(0, obra.percentual_conclusao));
   const pctEntrega = indiceEntregaAtual >= 0 ? ((indiceEntregaAtual + 1) / ENTREGA_OPCOES.length) * 100 : 0;
+  const faseAtual = [...milestones].reverse().find((m) => pct >= m.min);
+  const proximaFase = milestones.find((m) => pct < m.min);
 
   const heroBgY = scrollY * 0.35;
   const heroOpacity = Math.max(0, 1 - scrollY / 600);
@@ -422,23 +431,26 @@ export function ClienteView({
               {/* Barra principal com brilho e bolha de percentual */}
               <div className="relative">
                 <div className="relative w-full h-4 bg-atelie-superficie2 rounded-full shadow-[inset_0_2px_4px_rgba(0,0,0,0.4)]">
-                  <div className="barra-progresso h-full rounded-full overflow-hidden" style={{ width: `${pct}%` }}>
-                    <div className="absolute inset-0 bg-gradient-to-r from-atelie-dourado via-atelie-douradoClaro to-atelie-douradoClaro" />
+                  <div className="barra-progresso h-full rounded-full overflow-hidden" style={{ width: `${percentualExibido}%` }}>
+                    <div className={`absolute inset-0 bg-gradient-to-r ${gradienteProgresso(percentualExibido)}`} />
                     <div className="absolute inset-0 bg-[linear-gradient(110deg,transparent_25%,rgba(255,255,255,0.4)_50%,transparent_75%)] bg-[length:200%_100%] animate-shimmer" />
                     <div className="absolute inset-0 shadow-[inset_0_0_14px_rgba(255,255,255,0.15)]" />
+                    {percentualExibido >= 100 && (
+                      <div className="absolute inset-0 shadow-[0_0_24px_rgba(52,211,153,0.6)]" />
+                    )}
                   </div>
                   {[25, 50, 75].map((m) => (
-                    <div key={m} className={`absolute top-0 h-full w-px ${pct >= m ? 'bg-black/30' : 'bg-atelie-borda/40'}`} style={{ left: `${m}%` }} />
+                    <div key={m} className={`absolute top-0 h-full w-px ${percentualExibido >= m ? 'bg-black/30' : 'bg-atelie-borda/40'}`} style={{ left: `${m}%` }} />
                   ))}
                   {/* Bolha percentual */}
-                  <div className="absolute -top-9 -translate-x-1/2 transition-all duration-700 pointer-events-none" style={{ left: `${pct}%` }}>
+                  <div className="absolute -top-9 -translate-x-1/2 transition-all duration-700 pointer-events-none" style={{ left: `clamp(26px, ${percentualExibido}%, calc(100% - 26px))` }}>
                     <div className="relative px-2.5 py-1 rounded-lg bg-gradient-to-br from-atelie-dourado to-atelie-douradoClaro text-atelie-fundo text-xs font-bold shadow-[0_4px_14px_rgba(198,161,91,0.45)]">
                       {percentualExibido}%
                       <span className="absolute left-1/2 -translate-x-1/2 -bottom-1 w-2 h-2 rotate-45 bg-atelie-douradoClaro" />
                     </div>
                   </div>
                   {/* Ponto guia */}
-                  <div className="absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-atelie-dourado shadow-[0_0_16px_rgba(198,161,91,0.9)] ring-4 ring-atelie-dourado/20 animate-pulseDot" style={{ left: `calc(${pct}% - 8px)` }} />
+                  <div className="absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-atelie-dourado shadow-[0_0_16px_rgba(198,161,91,0.9)] ring-4 ring-atelie-dourado/20 animate-pulseDot" style={{ left: `calc(clamp(8px, ${percentualExibido}%, calc(100% - 8px)) - 8px)` }} />
                 </div>
               </div>
 
@@ -446,8 +458,8 @@ export function ClienteView({
               <div className="relative mt-9">
                 <div className="flex justify-between items-start">
                   {milestones.map((m, i) => {
-                    const atingido = pct >= m.min;
-                    const atual = pct >= m.min && pct < (milestones[i + 1]?.min ?? 101);
+                    const atingido = percentualExibido >= m.min;
+                    const atual = percentualExibido >= m.min && percentualExibido < (milestones[i + 1]?.min ?? 101);
                     return (
                       <div key={m.label} className="flex flex-col items-center gap-2 flex-1 min-w-0">
                         <div className="w-full flex items-center">
@@ -485,6 +497,26 @@ export function ClienteView({
                     );
                   })}
                 </div>
+              </div>
+
+              {/* Fase atual */}
+              <div className="mt-6 pt-4 border-t border-atelie-dourado/10 flex items-center gap-2.5">
+                <span className={`relative flex w-2.5 h-2.5`}>
+                  <span className={`absolute inline-flex h-full w-full rounded-full opacity-75 animate-ping ${corStatusDot(obra.status_atual)}`} />
+                  <span className={`relative inline-flex w-2.5 h-2.5 rounded-full ${corStatusDot(obra.status_atual)}`} />
+                </span>
+                <span className="text-xs text-atelie-textoMuted">
+                  Fase atual: <span className="text-atelie-douradoClaro font-semibold">{faseAtual?.label}</span>
+                  <span className="text-atelie-textoMuted/60 hidden sm:inline"> — {faseAtual?.desc}</span>
+                </span>
+                {proximaFase && (
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-atelie-dourado/10 border border-atelie-dourado/15 text-atelie-dourado/80 ml-auto hidden sm:inline-flex items-center gap-1">
+                    Próximo: {proximaFase.label}
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5-5 5M6 12h12" />
+                    </svg>
+                  </span>
+                )}
               </div>
             </div>
 
@@ -545,13 +577,13 @@ export function ClienteView({
                         <div key={i} className={`absolute top-0 h-full w-px ${pctEntrega >= (i / (ENTREGA_OPCOES.length - 1)) * 100 ? 'bg-black/30' : 'bg-atelie-borda/40'}`} style={{ left: `${(i / (ENTREGA_OPCOES.length - 1)) * 100}%` }} />
                       ) : null
                     )}
-                    <div className="absolute -top-9 -translate-x-1/2 transition-all duration-700 pointer-events-none" style={{ left: `${pctEntrega}%` }}>
+                    <div className="absolute -top-9 -translate-x-1/2 transition-all duration-700 pointer-events-none" style={{ left: `clamp(26px, ${pctEntrega}%, calc(100% - 26px))` }}>
                       <div className="relative px-2.5 py-1 rounded-lg bg-gradient-to-br from-emerald-400 to-teal-400 text-atelie-fundo text-xs font-bold shadow-[0_4px_14px_rgba(52,211,153,0.45)]">
                         {Math.round(pctEntrega)}%
                         <span className="absolute left-1/2 -translate-x-1/2 -bottom-1 w-2 h-2 rotate-45 bg-teal-400" />
                       </div>
                     </div>
-                    <div className="absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-emerald-400 shadow-[0_0_16px_rgba(52,211,153,0.9)] ring-4 ring-emerald-400/20 animate-pulseDot" style={{ left: `calc(${pctEntrega}% - 8px)` }} />
+                    <div className="absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-emerald-400 shadow-[0_0_16px_rgba(52,211,153,0.9)] ring-4 ring-emerald-400/20 animate-pulseDot" style={{ left: `calc(clamp(8px, ${pctEntrega}%, calc(100% - 8px)) - 8px)` }} />
                   </div>
                 </div>
 
