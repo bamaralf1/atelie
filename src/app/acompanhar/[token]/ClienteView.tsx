@@ -27,6 +27,29 @@ const SECOES = [
   { id: 'observacoes', label: 'Observações' },
 ];
 
+function IconoEtapaEntrega({ etapa, className }: { etapa: string; className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      {etapa === 'Secagem' && (
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.6} d="M12 3s6 6.2 6 10.3a6 6 0 11-12 0C6 9.2 12 3 12 3z" />
+      )}
+      {etapa === 'Embalada' && (
+        <>
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.6} d="M21 8l-9-5-9 5v8l9 5 9-5V8z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.6} d="M3.3 8.4L12 13l8.7-4.6" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.6} d="M12 13v8" />
+        </>
+      )}
+      {etapa === 'Enviada' && (
+        <>
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.6} d="M22 2L11 13" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.6} d="M22 2l-7 20-4-9-9-4 20-7z" />
+        </>
+      )}
+    </svg>
+  );
+}
+
 function useScrollReveal() {
   useEffect(() => {
     const obs = new IntersectionObserver(
@@ -338,12 +361,13 @@ export function ClienteView({
                 )}
               </div>
 
-              <div className="relative">
-                <div className="absolute -top-4 left-6 right-6 h-px bg-gradient-to-r from-transparent via-emerald-400/25 to-transparent" />
+              <div className="relative bg-gradient-to-br from-emerald-400/[0.06] to-transparent rounded-2xl border border-emerald-400/10 p-4 sm:p-5">
+                <div className="absolute -top-px left-8 right-8 h-px bg-gradient-to-r from-transparent via-emerald-400/40 to-transparent" />
                 <div className="flex justify-between items-start">
                   {ENTREGA_OPCOES.map((etapa, i) => {
                     const feita = indiceEntregaAtual >= i;
                     const atual = indiceEntregaAtual === i;
+                    const proxima = !feita && i === indiceEntregaAtual + 1;
                     return (
                       <div key={etapa} className="flex flex-col items-center gap-2.5 flex-1 min-w-0">
                         <div className="w-full flex items-center">
@@ -353,7 +377,9 @@ export function ClienteView({
                               ? 'bg-gradient-to-br from-emerald-400 via-emerald-500 to-teal-400 shadow-[0_0_22px_rgba(52,211,153,0.55)] ring-4 ring-emerald-400/20'
                               : atual
                                 ? 'bg-gradient-to-br from-emerald-400/30 to-emerald-400/5 border-2 border-emerald-400/50 shadow-[0_0_18px_rgba(52,211,153,0.35)] ring-4 ring-emerald-400/10'
-                                : 'bg-atelie-superficie2 border border-atelie-borda'
+                                : proxima
+                                  ? 'bg-atelie-superficie2 border border-emerald-400/40 shadow-[0_0_14px_rgba(52,211,153,0.2)]'
+                                  : 'bg-atelie-superficie2 border border-atelie-borda'
                           }`}>
                             {atual && (
                               <>
@@ -361,17 +387,21 @@ export function ClienteView({
                                 <span className="absolute -inset-0.5 rounded-full bg-emerald-400/15 animate-pulseDot" />
                               </>
                             )}
+                            {proxima && !atual && <span className="absolute -inset-0.5 rounded-full bg-emerald-400/10 animate-pulseDot" />}
                             {feita ? (
                               <svg className="w-4 h-4 text-atelie-fundo animate-scaleIn" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                               </svg>
                             ) : (
-                              <span className={`text-[10px] font-medium ${atual ? 'text-emerald-200' : 'text-atelie-textoMuted/70'}`}>{i + 1}</span>
+                              <IconoEtapaEntrega
+                                etapa={etapa}
+                                className={`w-4 h-4 ${atual || proxima ? 'text-emerald-300' : 'text-atelie-textoMuted/60'}`}
+                              />
                             )}
                           </div>
                           <div className={`h-[3px] flex-1 rounded-full transition-all duration-700 ${i === ENTREGA_OPCOES.length - 1 ? 'bg-transparent' : feita ? 'bg-gradient-to-r from-emerald-500 via-teal-300 to-emerald-500 bg-[length:200%_100%] animate-shimmer shadow-[0_0_10px_rgba(52,211,153,0.5)]' : 'bg-atelie-superficie2'}`} />
                         </div>
-                        <span className={`text-[10px] text-center leading-tight px-1 transition-all duration-500 ${feita ? 'text-emerald-300 font-semibold drop-shadow-[0_0_6px_rgba(52,211,153,0.5)]' : atual ? 'text-emerald-200 font-semibold' : 'text-atelie-textoMuted/50'}`}>
+                        <span className={`text-[10px] text-center leading-tight px-1 transition-all duration-500 ${feita ? 'text-emerald-300 font-semibold drop-shadow-[0_0_6px_rgba(52,211,153,0.5)]' : atual ? 'text-emerald-200 font-semibold' : proxima ? 'text-emerald-300/80 font-medium' : 'text-atelie-textoMuted/50'}`}>
                           {etapa}
                         </span>
                       </div>
