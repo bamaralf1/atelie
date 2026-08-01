@@ -1,4 +1,5 @@
 import { criarClientAdmin } from '@/lib/supabase/admin';
+import { criarClientServidor } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
 import { StatusBadge } from '@/components/admin/StatusBadge';
 import { ProgressBar } from '@/components/admin/ProgressBar';
@@ -8,16 +9,34 @@ import { formatarData, formatarMoeda } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
 
+async function buscarObraCompleta(id: string) {
+  const tentativas = [criarClientAdmin, criarClientServidor];
+  for (const criar of tentativas) {
+    try {
+      const supabase = criar();
+      const [{ data: obra }, { data: materiais }, { data: fotos }] = await Promise.all([
+        supabase.from('obras').select('*').eq('id', id).single(),
+        supabase.from('materiais').select('*').eq('obra_id', id).order('created_at', { ascending: false }),
+        supabase.from('fotos_progresso').select('*').eq('obra_id', id).order('data_upload', { ascending: false }),
+      ]);
+      if (obra) {
+        return {
+          obra: obra as Obra,
+          materiais: (materiais as Material[]) ?? [],
+          fotos: (fotos as FotoProgresso[]) ?? [],
+        };
+      }
+    } catch {
+      continue;
+    }
+  }
+  return null;
+}
+
 export default async function EditarObraPage({ params }: { params: { id: string } }) {
-  const supabase = criarClientAdmin();
-
-  const [{ data: obra }, { data: materiais }, { data: fotos }] = await Promise.all([
-    supabase.from('obras').select('*').eq('id', params.id).single(),
-    supabase.from('materiais').select('*').eq('obra_id', params.id).order('created_at', { ascending: false }),
-    supabase.from('fotos_progresso').select('*').eq('obra_id', params.id).order('data_upload', { ascending: false }),
-  ]);
-
-  if (!obra) notFound();
+  const dados = await buscarObraCompleta(params.id);
+  if (!dados) notFound();
+  const { obra, materiais, fotos } = dados;
 
   return (
     <div>
@@ -55,9 +74,9 @@ export default async function EditarObraPage({ params }: { params: { id: string 
       </div>
 
       <AbasObra
-        obra={obra as Obra}
-        materiaisIniciais={(materiais as Material[]) ?? []}
-        fotosIniciais={(fotos as FotoProgresso[]) ?? []}
+        obra={obra}
+        materiaisIniciais={materiais}
+        fotosIniciais={fotos}
       />
     </div>
   );
