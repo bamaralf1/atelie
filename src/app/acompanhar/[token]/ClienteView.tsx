@@ -254,6 +254,8 @@ export function ClienteView({
         .reveal-visible { opacity: 1; transform: translateY(0); }
         @keyframes kenburns { 0% { transform: scale(1.05); } 100% { transform: scale(1.18); } }
         @keyframes flutuar { 0%, 100% { transform: translateY(0) translateX(0); opacity: 0.35; } 50% { transform: translateY(-20px) translateX(5px); opacity: 0.9; } }
+        @keyframes giro { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes letra { 0% { opacity: 0; transform: translateY(26px) scale(0.96); filter: blur(8px); } 100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); } }
       `}</style>
 
       {/* Barra de progresso de rolagem */}
@@ -348,6 +350,10 @@ export function ClienteView({
         {/* Anel decorativo */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full border border-atelie-dourado/5 pointer-events-none" style={{ opacity: heroOpacity }} />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] rounded-full border border-atelie-dourado/10 pointer-events-none" style={{ opacity: heroOpacity }} />
+        {/* Arco dourado giratório */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[620px] h-[620px] pointer-events-none" style={{ opacity: heroOpacity * 0.7 }}>
+          <div className="w-full h-full rounded-full border-t-2 border-atelie-dourado/60 animate-[giro_26s_linear_infinite]" />
+        </div>
 
         <div className="relative text-center max-w-2xl" style={{ opacity: heroOpacity, transform: `translateY(${scrollY * 0.1}px)` }}>
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-atelie-dourado/10 border border-atelie-dourado/20 backdrop-blur-sm mb-5 animate-fadeInUp">
@@ -357,7 +363,12 @@ export function ClienteView({
             </span>
           </div>
           <h1 className="font-display text-4xl sm:text-5xl md:text-7xl mb-4 leading-[1.1] text-atelie-texto drop-shadow-2xl">
-            {obra.titulo}
+            {obra.titulo.split(' ').map((palavra, i) => (
+              <span key={i} className="inline-block animate-[letra_0.8s_ease-out_both]" style={{ animationDelay: `${180 + i * 110}ms` }}>
+                {palavra}
+                {i < obra.titulo.split(' ').length - 1 ? '\u00A0' : ''}
+              </span>
+            ))}
           </h1>
           <p className="text-atelie-textoMuted text-base sm:text-lg mb-8 max-w-lg mx-auto">
             Acompanhamento exclusivo para{' '}
@@ -683,7 +694,7 @@ export function ClienteView({
               <div className="absolute -top-px left-8 right-8 h-px bg-gradient-to-r from-transparent via-atelie-dourado/20 to-transparent" />
               <div>
                 <p className="text-xs uppercase tracking-[0.15em] text-atelie-textoMuted/60 mb-1">Previsão de conclusão</p>
-                <span className="font-display text-xl sm:text-2xl text-atelie-texto">{formatarData(obra.estimativa_conclusao)}</span>
+                <span className="font-display text-xl sm:text-2xl gradient-text bg-[length:200%_100%] animate-shimmer">{formatarData(obra.estimativa_conclusao)}</span>
               </div>
               {diasInfo && obra.status_atual !== 'Concluída' && (
                 <div className={`text-right ${diasInfo.classe}`}>
@@ -749,14 +760,16 @@ export function ClienteView({
       </div>
 
       {/* Footer */}
-      <footer className="border-t border-atelie-borda/50 py-12 text-center">
+      <footer className="relative border-t border-atelie-borda/50 py-12 text-center overflow-hidden">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-44 h-px bg-gradient-to-r from-transparent via-atelie-dourado/60 to-transparent" />
+        <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-2.5 h-2.5 rotate-45 bg-atelie-dourado/70 shadow-[0_0_12px_rgba(198,161,91,0.6)]" />
         <div className="max-w-3xl mx-auto px-6">
-          <div className="w-10 h-10 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-atelie-dourado/20 to-atelie-dourado/5 border border-atelie-dourado/10 flex items-center justify-center">
+          <div className="w-10 h-10 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-atelie-dourado/20 to-atelie-dourado/5 border border-atelie-dourado/10 flex items-center justify-center shadow-[0_0_18px_rgba(198,161,91,0.12)]">
             <svg className="w-5 h-5 text-atelie-dourado" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
           </div>
-          <p className="font-display italic text-atelie-dourado text-base mb-1">Atelier Bruno Amaral</p>
+          <p className="font-display italic text-atelie-dourado text-base mb-1 drop-shadow-[0_0_8px_rgba(198,161,91,0.35)]">Atelier Bruno Amaral</p>
           <p className="text-xs text-atelie-textoMuted/50">Acompanhamento em tempo real · {obra.titulo}</p>
         </div>
       </footer>
