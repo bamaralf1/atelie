@@ -317,8 +317,7 @@ export function ClienteView({
             </div>
 
             {/* Entrega */}
-            {obra.entrega_status && (
-              <div className="mt-8 pt-7 border-t border-atelie-borda/40">
+            <div className="mt-8 pt-7 border-t border-atelie-borda/40">
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-400/20 to-emerald-400/5 border border-emerald-400/20 flex items-center justify-center">
@@ -331,7 +330,11 @@ export function ClienteView({
                       <p className="text-atelie-textoMuted text-xs mt-0.5">Acompanhe o envio da obra</p>
                     </div>
                   </div>
-                  <StatusBadge status={obra.entrega_status} tamanho="normal" />
+                  {obra.entrega_status ? (
+                    <StatusBadge status={obra.entrega_status} tamanho="normal" />
+                  ) : (
+                    <span className="text-xs text-atelie-textoMuted/60 italic">Ainda em produção</span>
+                  )}
                 </div>
 
                 <div className="flex justify-between items-start">
@@ -365,7 +368,6 @@ export function ClienteView({
                   })}
                 </div>
               </div>
-            )}
           </div>
         </section>
 
