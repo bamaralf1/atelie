@@ -7,6 +7,7 @@ interface ComparacaoSliderProps {
   imagemDepois: string;
   labelAntes?: string;
   labelDepois?: string;
+  onExpand?: () => void;
 }
 
 export function ComparacaoSlider({
@@ -14,6 +15,7 @@ export function ComparacaoSlider({
   imagemDepois,
   labelAntes = 'Antes',
   labelDepois = 'Depois',
+  onExpand,
 }: ComparacaoSliderProps) {
   const [posicao, setPosicao] = useState(50);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -97,6 +99,19 @@ export function ComparacaoSlider({
       <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-sm text-white text-[10px] px-2 py-1 rounded pointer-events-none">
         {labelDepois}
       </div>
+
+      {onExpand && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onExpand(); }}
+          className="absolute bottom-3 right-3 z-10 bg-black/60 backdrop-blur-sm text-white text-[10px] px-2.5 py-1.5 rounded-full flex items-center gap-1.5 hover:bg-atelie-dourado/40 hover:text-atelie-douradoClaro transition-colors pointer-events-auto"
+          title="Ver em tamanho grande"
+        >
+          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+          </svg>
+          Ampliar
+        </button>
+      )}
     </div>
   );
 }

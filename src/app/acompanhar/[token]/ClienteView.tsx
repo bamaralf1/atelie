@@ -2,18 +2,20 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Image from 'next/image';
-import { Obra, Material, HistoricoStatus, FotoProgresso, Comentario } from '@/lib/types';
+import { Obra, Material, HistoricoStatus, FotoProgresso, Comentario, ItemVisor } from '@/lib/types';
 import { useRealtimeObra } from '@/hooks/useRealtimeObra';
 import { useTempoDecorrido } from '@/hooks/useTempoDecorrido';
 import { ProgressBar } from '@/components/admin/ProgressBar';
 import { StatusBadge } from '@/components/admin/StatusBadge';
 import { Timeline } from '@/components/cliente/Timeline';
 import { Lightbox } from '@/components/cliente/Lightbox';
+import { VisorImagem } from '@/components/cliente/VisorImagem';
 import { PdfButton } from '@/components/cliente/PdfButton';
 import { ComparacaoSlider } from '@/components/cliente/ComparacaoSlider';
 import { Celebracao } from '@/components/cliente/Celebracao';
 import { Comentarios } from '@/components/cliente/Comentarios';
-import { formatarData, formatarMoeda, formatarDiasRestantes, corStatusDot } from '@/lib/utils';
+import { formatarData, formatarMoeda, formatarDiasRestantes, corStatusDot, indiceEntrega } from '@/lib/utils';
+import { ENTREGA_OPCOES } from '@/lib/types';
 
 const SECOES = [
   { id: 'progresso', label: 'Progresso' },
@@ -110,11 +112,27 @@ export function ClienteView({
   const milestones = [
     { label: 'Esboço', min: 0 },
     { label: 'Imprimatura', min: 15 },
-    { label: 'Pintura', min: 30 },
-    { label: 'Retoques', min: 60 },
-    { label: 'Verniz', min: 80 },
+    { label: 'Blocagem', min: 30 },
+    { label: 'Pintura', min: 60 },
+    { label: 'Detalhamento final', min: 80 },
     { label: 'Concluída', min: 100 },
   ];
+
+  const itensVisor: ItemVisor[] = [
+    ...(obra.imagem_referencia_url
+      ? [{ id: 'referencia', url: obra.imagem_referencia_url, legenda: 'A imagem que serviu de inspiração', etapa: 'Referência inicial' }]
+      : []),
+    ...(obra.imagem_obra_atual_url
+      ? [{ id: 'atual', url: obra.imagem_obra_atual_url, legenda: 'Estado mais recente da pintura', etapa: 'Progresso atual' }]
+      : []),
+    ...fotos.map((f) => ({ id: f.id, url: f.url_foto, legenda: f.legenda, etapa: f.etapa, data: f.data_upload })),
+  ];
+  const [visorIndice, setVisorIndice] = useState<number | null>(null);
+  const abrirVisor = (id: string) => {
+    const i = itensVisor.findIndex((item) => item.id === id);
+    if (i >= 0) setVisorIndice(i);
+  };
+  const indiceEntregaAtual = indiceEntrega(obra.entrega_status);
 
   const heroBgY = scrollY * 0.35;
   const heroOpacity = Math.max(0, 1 - scrollY / 600);
@@ -297,6 +315,57 @@ export function ClienteView({
                 </span>
               )}
             </div>
+
+            {/* Entrega */}
+            {obra.entrega_status && (
+              <div className="mt-8 pt-7 border-t border-atelie-borda/40">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-400/20 to-emerald-400/5 border border-emerald-400/20 flex items-center justify-center">
+                      <svg className="w-5 h-5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M12 3l1.912 5.813a2 2 0 001.272 1.272L21 12l-5.816 1.915a2 2 0 00-1.272 1.272L12 21l-1.912-5.816a2 2 0 00-1.272-1.272L3 12l5.816-1.915a2 2 0 001.272-1.272L12 3z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="font-display text-lg text-atelie-texto">Entrega</h3>
+                      <p className="text-atelie-textoMuted text-xs mt-0.5">Acompanhe o envio da obra</p>
+                    </div>
+                  </div>
+                  <StatusBadge status={obra.entrega_status} tamanho="normal" />
+                </div>
+
+                <div className="flex justify-between items-start">
+                  {ENTREGA_OPCOES.map((etapa, i) => {
+                    const feita = indiceEntregaAtual >= i;
+                    const atual = indiceEntregaAtual === i;
+                    return (
+                      <div key={etapa} className="flex flex-col items-center gap-2 flex-1 min-w-0">
+                        <div className="w-full flex items-center">
+                          <div className={`h-1 flex-1 rounded-full transition-all duration-700 ${i === 0 ? 'bg-transparent' : feita ? 'bg-gradient-to-r from-emerald-500 to-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.4)]' : 'bg-atelie-superficie2'}`} />
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-all duration-500 ${
+                            feita
+                              ? 'bg-gradient-to-br from-emerald-400 to-emerald-500 shadow-[0_0_14px_rgba(52,211,153,0.45)]'
+                              : 'bg-atelie-superficie2 border border-atelie-borda'
+                          } ${atual ? 'scale-110' : ''}`}>
+                            {feita ? (
+                              <svg className="w-4 h-4 text-atelie-fundo" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                              </svg>
+                            ) : (
+                              <span className="text-[9px] text-atelie-textoMuted">{i + 1}</span>
+                            )}
+                          </div>
+                          <div className={`h-1 flex-1 rounded-full transition-all duration-700 ${i === ENTREGA_OPCOES.length - 1 ? 'bg-transparent' : feita ? 'bg-gradient-to-r from-emerald-500 to-emerald-400' : 'bg-atelie-superficie2'}`} />
+                        </div>
+                        <span className={`text-[10px] text-center leading-tight px-1 ${feita ? 'text-emerald-300 font-medium' : 'text-atelie-textoMuted/50'}`}>
+                          {etapa}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         </section>
 
@@ -311,6 +380,7 @@ export function ClienteView({
                 imagemDepois={obra.imagem_obra_atual_url!}
                 labelAntes="Referência inicial"
                 labelDepois="Progresso atual"
+                onExpand={() => abrirVisor('atual')}
               />
             </div>
           </section>
@@ -321,10 +391,20 @@ export function ClienteView({
           <section className="reveal">
             <h2 className="font-display text-2xl sm:text-3xl text-atelie-texto mb-1">A obra hoje</h2>
             <p className="text-atelie-textoMuted text-sm mb-5">Estado mais recente da pintura</p>
-            <div className="relative w-full aspect-[16/9] rounded-2xl overflow-hidden border border-atelie-borda/60 shadow-xl shadow-black/20 group">
+            <button
+              onClick={() => abrirVisor('atual')}
+              className="relative w-full aspect-[16/9] rounded-2xl overflow-hidden border border-atelie-borda/60 shadow-xl shadow-black/20 group cursor-zoom-in"
+              aria-label="Ampliar foto da obra"
+            >
               <Image src={obra.imagem_obra_atual_url} alt={obra.titulo} fill className="object-cover transition-transform duration-700 group-hover:scale-105" priority />
               <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            </div>
+              <span className="absolute bottom-3 right-3 bg-black/60 backdrop-blur-sm text-white text-[10px] px-2.5 py-1.5 rounded-full flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                Ampliar
+              </span>
+            </button>
           </section>
         )}
 
@@ -347,9 +427,20 @@ export function ClienteView({
           <section className="reveal">
             <h2 className="font-display text-2xl sm:text-3xl text-atelie-texto mb-1">Referência inicial</h2>
             <p className="text-atelie-textoMuted text-sm mb-5">A imagem que serviu de inspiração</p>
-            <div className="relative w-full aspect-[16/9] rounded-2xl overflow-hidden border border-atelie-borda/60 shadow-xl shadow-black/20">
-              <Image src={obra.imagem_referencia_url} alt="Referência" fill className="object-cover" />
-            </div>
+            <button
+              onClick={() => abrirVisor('referencia')}
+              className="relative w-full aspect-[16/9] rounded-2xl overflow-hidden border border-atelie-borda/60 shadow-xl shadow-black/20 group cursor-zoom-in"
+              aria-label="Ampliar referência"
+            >
+              <Image src={obra.imagem_referencia_url} alt="Referência" fill className="object-cover transition-transform duration-700 group-hover:scale-105" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <span className="absolute bottom-3 right-3 bg-black/60 backdrop-blur-sm text-white text-[10px] px-2.5 py-1.5 rounded-full flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                Ampliar
+              </span>
+            </button>
           </section>
         )}
 
@@ -476,6 +567,10 @@ export function ClienteView({
           <p className="text-xs text-atelie-textoMuted/50">Acompanhamento em tempo real · {obra.titulo}</p>
         </div>
       </footer>
+
+      {visorIndice !== null && itensVisor[visorIndice] && (
+        <VisorImagem itens={itensVisor} indiceInicial={visorIndice} onFechar={() => setVisorIndice(null)} />
+      )}
     </div>
   );
 }

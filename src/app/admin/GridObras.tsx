@@ -7,9 +7,9 @@ import { ObraCard } from '@/components/admin/ObraCard';
 const STATUS_OPCOES = [
   'Esboço',
   'Imprimatura',
-  'Pintura em andamento',
-  'Retoques finais',
-  'Verniz final',
+  'Blocagem',
+  'Pintura',
+  'Detalhamento final',
   'Concluída',
 ];
 

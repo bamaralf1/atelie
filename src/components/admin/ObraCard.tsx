@@ -71,6 +71,22 @@ export function ObraCard({ obra }: { obra: Obra }) {
           </div>
         </div>
 
+        {obra.rotulos && obra.rotulos.length > 0 && (
+          <div className="flex flex-wrap gap-1 mb-2">
+            {obra.rotulos.slice(0, 4).map((rotulo) => (
+              <span
+                key={rotulo}
+                className="text-[9px] bg-atelie-terracota/10 text-atelie-terracotaClaro border border-atelie-terracota/20 px-1.5 py-0.5 rounded"
+              >
+                {rotulo}
+              </span>
+            ))}
+            {obra.rotulos.length > 4 && (
+              <span className="text-[9px] text-atelie-textoMuted px-1 py-0.5">+{obra.rotulos.length - 4}</span>
+            )}
+          </div>
+        )}
+
         <div className="mb-3">
           <StatusBadge status={obra.status_atual} />
         </div>

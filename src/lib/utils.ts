@@ -1,4 +1,4 @@
-import { StatusObra, STATUS_CORES } from './types';
+import { StatusObra, STATUS_CORES, EntregaStatus, ENTREGA_OPCOES } from './types';
 
 export function formatarMoeda(valor: number): string {
   return new Intl.NumberFormat('pt-BR', {
@@ -73,4 +73,9 @@ export function corStatusDot(status: StatusObra | string): string {
 
 export function classNames(...classes: (string | boolean | undefined | null)[]): string {
   return classes.filter(Boolean).join(' ');
+}
+
+export function indiceEntrega(entrega: EntregaStatus | null | undefined): number {
+  if (!entrega) return -1;
+  return ENTREGA_OPCOES.indexOf(entrega);
 }

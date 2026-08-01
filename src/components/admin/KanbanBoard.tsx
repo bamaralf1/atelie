@@ -15,9 +15,9 @@ interface KanbanBoardProps {
 const CORES_COLUNA: Record<string, string> = {
   'Esboço': 'border-t-zinc-500',
   'Imprimatura': 'border-t-atelie-terracota',
-  'Pintura em andamento': 'border-t-atelie-dourado',
-  'Retoques finais': 'border-t-atelie-douradoClaro',
-  'Verniz final': 'border-t-atelie-terracotaClaro',
+  'Blocagem': 'border-t-atelie-dourado',
+  'Pintura': 'border-t-atelie-douradoClaro',
+  'Detalhamento final': 'border-t-atelie-terracotaClaro',
   'Concluída': 'border-t-emerald-500',
 };
 

@@ -24,12 +24,21 @@ create table if not exists obras (
   exibir_custos boolean not null default false,
   imagem_referencia_url text,
   imagem_obra_atual_url text,
+  entrega_status text,
+  rotulos text[] not null default '{}',
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
 
 comment on column obras.status_atual is
-  'Um de: Esboço, Imprimatura, Pintura em andamento, Retoques finais, Verniz final, Concluída';
+  'Um de: Esboço, Imprimatura, Blocagem, Pintura, Detalhamento final, Concluída';
+
+comment on column obras.entrega_status is
+  'Um de: Secagem, Embalada, Enviada (opcional, fase pós-conclusão)';
+
+-- Migração para bancos já existentes (idempotente)
+alter table obras add column if not exists entrega_status text;
+alter table obras add column if not exists rotulos text[] not null default '{}';
 
 -- ---------------------------------------------------------
 -- Materiais utilizados em cada obra

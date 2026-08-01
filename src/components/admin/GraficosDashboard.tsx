@@ -10,7 +10,7 @@ export function GraficosDashboard({ obras, stats }: { obras: Obra[]; stats: Esta
   const dadosStatus = stats.porStatus.map((s) => ({
     name: s.status,
     value: s.quantidade,
-    color: CORES_GRAFICO[['Esboço', 'Imprimatura', 'Pintura em andamento', 'Retoques finais', 'Verniz final', 'Concluída'].indexOf(s.status)] ?? '#9A9086',
+    color: CORES_GRAFICO[['Esboço', 'Imprimatura', 'Blocagem', 'Pintura', 'Detalhamento final', 'Concluída'].indexOf(s.status)] ?? '#9A9086',
   }));
 
   const dadosOrcamento = obras

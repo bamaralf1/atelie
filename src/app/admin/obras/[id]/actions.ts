@@ -4,6 +4,20 @@ import { criarClientAdmin } from '@/lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
 import { v4 as uuidv4 } from 'uuid';
 
+async function apagarArquivoStorage(url: string | null) {
+  if (!url) return;
+  try {
+    const partes = new URL(url).pathname.split('/');
+    const idx = partes.indexOf('public');
+    if (idx < 0 || partes.length <= idx + 1) return;
+    const bucket = partes[idx + 1];
+    const caminho = partes.slice(idx + 2).join('/');
+    if (!caminho) return;
+    const supabase = criarClientAdmin();
+    await supabase.storage.from(bucket).remove([caminho]);
+  } catch {}
+}
+
 /** Atualiza os dados gerais da obra (aba "Visão Geral"). O trigger no banco
  * registra automaticamente o histórico quando status_atual muda. */
 export async function atualizarVisaoGeralAction(obraId: string, formData: FormData) {
@@ -15,12 +29,111 @@ export async function atualizarVisaoGeralAction(obraId: string, formData: FormDa
   const descricao = (formData.get('descricao') as string) || null;
   const observacoes = (formData.get('observacoes') as string) || null;
   const exibir_custos = formData.get('exibir_custos') === 'on';
+  const titulo = (formData.get('titulo') as string)?.trim() || null;
+  const orcamento_total = parseFloat((formData.get('orcamento_total') as string) || '0') || 0;
+  const entrega_status = (formData.get('entrega_status') as string) || null;
+  const rotulos = ((formData.get('rotulos') as string) || '')
+    .split(',')
+    .map((r) => r.trim())
+    .filter(Boolean);
 
   const { error } = await supabase
     .from('obras')
-    .update({ status_atual, percentual_conclusao, estimativa_conclusao, descricao, observacoes, exibir_custos })
+    .update({
+      status_atual,
+      percentual_conclusao,
+      estimativa_conclusao,
+      descricao,
+      observacoes,
+      exibir_custos,
+      titulo,
+      orcamento_total,
+      entrega_status,
+      rotulos,
+    })
     .eq('id', obraId);
 
+  revalidatePath(`/admin/obras/${obraId}`);
+  return { erro: error?.message };
+}
+
+/** Edita nome e e-mail do cliente (aba "Cliente"). */
+export async function atualizarClienteAction(obraId: string, formData: FormData) {
+  const supabase = criarClientAdmin();
+
+  const cliente_nome = (formData.get('cliente_nome') as string)?.trim() || null;
+  const cliente_email = (formData.get('cliente_email') as string)?.trim() || null;
+
+  if (!cliente_nome) return { erro: 'Informe o nome do cliente.' };
+
+  const { error } = await supabase
+    .from('obras')
+    .update({ cliente_nome, cliente_email })
+    .eq('id', obraId);
+
+  revalidatePath(`/admin/obras/${obraId}`);
+  return { erro: error?.message };
+}
+
+/** Substitui a imagem de referência da obra. */
+export async function atualizarReferenciaAction(obraId: string, formData: FormData) {
+  const supabase = criarClientAdmin();
+
+  const arquivo = formData.get('referencia') as File | null;
+  if (!arquivo || arquivo.size === 0) return { erro: 'Selecione uma imagem.' };
+
+  const extensao = arquivo.name.split('.').pop();
+  const caminho = `${obraId}/referencia-${uuidv4()}.${extensao}`;
+
+  const { error: erroUpload } = await supabase.storage
+    .from('referencias')
+    .upload(caminho, arquivo, { contentType: arquivo.type, upsert: true });
+
+  if (erroUpload) return { erro: erroUpload.message };
+
+  const { data: publicUrl } = supabase.storage.from('referencias').getPublicUrl(caminho);
+
+  const { data: obraAtual } = await supabase
+    .from('obras')
+    .select('imagem_referencia_url')
+    .eq('id', obraId)
+    .single();
+
+  const { error } = await supabase
+    .from('obras')
+    .update({ imagem_referencia_url: publicUrl.publicUrl })
+    .eq('id', obraId);
+
+  if (!error && obraAtual?.imagem_referencia_url) {
+    await apagarArquivoStorage(obraAtual.imagem_referencia_url);
+  }
+
+  revalidatePath(`/admin/obras/${obraId}`);
+  return { erro: error?.message };
+}
+
+/** Exclui a obra e tudo associado (fotos, histórico, comentários, materiais). */
+export async function excluirObraAction(obraId: string) {
+  const supabase = criarClientAdmin();
+
+  const { data: obra } = await supabase
+    .from('obras')
+    .select('imagem_referencia_url')
+    .eq('id', obraId)
+    .single();
+  await apagarArquivoStorage(obra?.imagem_referencia_url ?? null);
+
+  const { data: fotos } = await supabase
+    .from('fotos_progresso')
+    .select('url_foto')
+    .eq('obra_id', obraId);
+  for (const f of fotos ?? []) {
+    await apagarArquivoStorage(f.url_foto);
+  }
+
+  const { error } = await supabase.from('obras').delete().eq('id', obraId);
+
+  revalidatePath('/admin');
   revalidatePath(`/admin/obras/${obraId}`);
   return { erro: error?.message };
 }

@@ -5,7 +5,7 @@ const OBRA_EXEMPLO = {
   titulo: 'Retrato em óleo — D. Maria',
   cliente_nome: 'Maria Silva',
   cliente_email: 'maria.silva@email.com',
-  status_atual: 'Pintura em andamento' as const,
+  status_atual: 'Pintura' as const,
   percentual_conclusao: 45,
   orcamento_total: 4500,
   custo_materiais: 1200,

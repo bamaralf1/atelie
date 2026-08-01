@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Obra, STATUS_OPCOES, StatusObra } from '@/lib/types';
-import { atualizarVisaoGeralAction } from '../actions';
+import { useRouter } from 'next/navigation';
+import { Obra, STATUS_OPCOES, StatusObra, ENTREGA_OPCOES } from '@/lib/types';
+import { atualizarVisaoGeralAction, atualizarReferenciaAction, excluirObraAction } from '../actions';
 
 export function TabVisaoGeral({ obra }: { obra: Obra }) {
   const [percentual, setPercentual] = useState(obra.percentual_conclusao);
@@ -10,7 +11,31 @@ export function TabVisaoGeral({ obra }: { obra: Obra }) {
   const [salvo, setSalvo] = useState(false);
   const [statusAtual, setStatusAtual] = useState(obra.status_atual);
   const [confirmarStatus, setConfirmarStatus] = useState<StatusObra | null>(null);
+  const [salvandoReferencia, setSalvandoReferencia] = useState(false);
+  const [erroReferencia, setErroReferencia] = useState<string | null>(null);
+  const [confirmarExclusao, setConfirmarExclusao] = useState(false);
+  const [excluindo, setExcluindo] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
+  const router = useRouter();
+
+  async function handleTrocarReferencia(formData: FormData) {
+    setSalvandoReferencia(true);
+    setErroReferencia(null);
+    const r = await atualizarReferenciaAction(obra.id, formData);
+    if (r?.erro) setErroReferencia(r.erro);
+    setSalvandoReferencia(false);
+  }
+
+  async function handleExcluir() {
+    setExcluindo(true);
+    const r = await excluirObraAction(obra.id);
+    if (r?.erro) {
+      setExcluindo(false);
+      setConfirmarExclusao(false);
+      return;
+    }
+    router.push('/admin');
+  }
 
   useEffect(() => {
     if (!confirmarStatus) return;
@@ -77,6 +102,28 @@ export function TabVisaoGeral({ obra }: { obra: Obra }) {
         action={handleSubmit}
         className="bg-atelie-superficie border border-atelie-borda rounded-lg p-6 space-y-5"
       >
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs uppercase tracking-wide text-atelie-textoMuted mb-2">Título da obra</label>
+            <input
+              name="titulo"
+              defaultValue={obra.titulo}
+              className="input-atelie"
+            />
+          </div>
+          <div>
+            <label className="block text-xs uppercase tracking-wide text-atelie-textoMuted mb-2">Orçamento total (R$)</label>
+            <input
+              name="orcamento_total"
+              type="number"
+              step="0.01"
+              min="0"
+              defaultValue={obra.orcamento_total || 0}
+              className="input-atelie"
+            />
+          </div>
+        </div>
+
         <div>
           <label className="block text-xs uppercase tracking-wide text-atelie-textoMuted mb-2">Status atual</label>
           <div className="flex flex-wrap gap-2">
@@ -85,9 +132,9 @@ export function TabVisaoGeral({ obra }: { obra: Obra }) {
               const cores: Record<string, string> = {
                 'Esboço': ativo ? 'bg-zinc-500/30 border-zinc-400 text-zinc-200' : 'bg-zinc-500/10 border-zinc-500/30 text-zinc-400',
                 'Imprimatura': ativo ? 'bg-atelie-terracota/30 border-atelie-terracota text-atelie-terracotaClaro' : 'bg-atelie-terracota/10 border-atelie-terracota/30 text-atelie-terracota/70',
-                'Pintura em andamento': ativo ? 'bg-atelie-dourado/30 border-atelie-dourado text-atelie-douradoClaro' : 'bg-atelie-dourado/10 border-atelie-dourado/30 text-atelie-dourado/70',
-                'Retoques finais': ativo ? 'bg-atelie-dourado/30 border-atelie-dourado text-atelie-douradoClaro' : 'bg-atelie-dourado/10 border-atelie-dourado/30 text-atelie-dourado/70',
-                'Verniz final': ativo ? 'bg-atelie-terracota/30 border-atelie-terracota text-atelie-terracotaClaro' : 'bg-atelie-terracota/10 border-atelie-terracota/30 text-atelie-terracota/70',
+                'Blocagem': ativo ? 'bg-atelie-dourado/30 border-atelie-dourado text-atelie-douradoClaro' : 'bg-atelie-dourado/10 border-atelie-dourado/30 text-atelie-dourado/70',
+                'Pintura': ativo ? 'bg-atelie-dourado/30 border-atelie-dourado text-atelie-douradoClaro' : 'bg-atelie-dourado/10 border-atelie-dourado/30 text-atelie-dourado/70',
+                'Detalhamento final': ativo ? 'bg-atelie-terracota/30 border-atelie-terracota text-atelie-terracotaClaro' : 'bg-atelie-terracota/10 border-atelie-terracota/30 text-atelie-terracota/70',
                 'Concluída': ativo ? 'bg-emerald-900/40 border-emerald-500 text-emerald-300' : 'bg-emerald-900/10 border-emerald-700/30 text-emerald-700',
               };
               return (
@@ -127,6 +174,35 @@ export function TabVisaoGeral({ obra }: { obra: Obra }) {
             <span>50%</span>
             <span>75%</span>
             <span>100%</span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs uppercase tracking-wide text-atelie-textoMuted mb-2">Etapa de entrega</label>
+            <select
+              name="entrega_status"
+              defaultValue={obra.entrega_status ?? ''}
+              className="input-atelie"
+            >
+              <option value="">Sem etapa de entrega</option>
+              {ENTREGA_OPCOES.map((etapa) => (
+                <option key={etapa} value={etapa}>{etapa}</option>
+              ))}
+            </select>
+            <p className="text-[10px] text-atelie-textoMuted mt-1.5">
+              Exibido como segundo progresso no acompanhamento do cliente.
+            </p>
+          </div>
+          <div>
+            <label className="block text-xs uppercase tracking-wide text-atelie-textoMuted mb-2">Rótulos</label>
+            <input
+              name="rotulos"
+              defaultValue={(obra.rotulos ?? []).join(', ')}
+              placeholder="Ex.: Retrato, Óleo, Premiada"
+              className="input-atelie"
+            />
+            <p className="text-[10px] text-atelie-textoMuted mt-1.5">Separe por vírgula.</p>
           </div>
         </div>
 
@@ -232,6 +308,78 @@ export function TabVisaoGeral({ obra }: { obra: Obra }) {
                 className="btn-dourado px-4 py-2 text-sm"
               >
                 Confirmar mudança
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Trocar imagem de referência */}
+      <div className="bg-atelie-superficie border border-atelie-borda rounded-lg p-6 space-y-4">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <p className="text-xs uppercase tracking-wide text-atelie-textoMuted mb-1">Imagem de referência</p>
+            <p className="text-sm text-atelie-textoMuted">Substitua a foto que inspirou a obra.</p>
+          </div>
+          {obra.imagem_referencia_url && (
+            <div className="w-24 h-16 rounded-md overflow-hidden border border-atelie-borda shrink-0">
+              <img src={obra.imagem_referencia_url} alt="Referência atual" className="w-full h-full object-cover" />
+            </div>
+          )}
+        </div>
+        <form action={handleTrocarReferencia} className="flex items-center gap-3 flex-wrap">
+          <input
+            name="referencia"
+            type="file"
+            accept="image/*"
+            className="text-sm text-atelie-textoMuted file:mr-3 file:px-3 file:py-1.5 file:rounded-md file:border file:border-atelie-borda file:bg-atelie-superficie2 file:text-atelie-texto file:text-xs file:cursor-pointer file:hover:border-atelie-dourado/40 file:transition-colors"
+          />
+          <button type="submit" disabled={salvandoReferencia} className="btn-outline px-4 py-2 text-sm">
+            {salvandoReferencia ? 'Enviando...' : 'Trocar referência'}
+          </button>
+          {erroReferencia && <span className="text-atelie-terracotaClaro text-sm">{erroReferencia}</span>}
+        </form>
+      </div>
+
+      {/* Excluir obra */}
+      <div className="bg-atelie-superficie border border-atelie-terracota/30 rounded-lg p-6">
+        <p className="text-xs uppercase tracking-wide text-atelie-terracotaClaro mb-1">Zona de perigo</p>
+        <p className="text-sm text-atelie-textoMuted mb-4">
+          Excluir apaga a obra, fotos, histórico, comentários e materiais. Não é possível desfazer.
+        </p>
+        <button
+          onClick={() => setConfirmarExclusao(true)}
+          className="bg-atelie-terracota/20 border border-atelie-terracota/50 text-atelie-terracotaClaro px-4 py-2 text-sm rounded-md hover:bg-atelie-terracota/30 transition-colors"
+        >
+          Excluir obra
+        </button>
+      </div>
+
+      {/* Modal de confirmação de exclusão */}
+      {confirmarExclusao && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fadeIn"
+          onClick={() => setConfirmarExclusao(false)}
+        >
+          <div
+            className="bg-atelie-superficie border border-atelie-borda rounded-lg p-6 max-w-sm mx-4 shadow-dourado-lg animate-scaleIn"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="font-display text-lg mb-2">Excluir obra?</h3>
+            <p className="text-sm text-atelie-textoMuted mb-4">
+              Tem certeza que deseja excluir <strong>{obra.titulo}</strong>?
+              <br />Todos os dados serão removidos permanentemente.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button onClick={() => setConfirmarExclusao(false)} className="btn-outline px-4 py-2 text-sm">
+                Cancelar
+              </button>
+              <button
+                onClick={handleExcluir}
+                disabled={excluindo}
+                className="bg-atelie-terracota text-white px-4 py-2 text-sm rounded-md hover:bg-atelie-terracota/80 transition-colors disabled:opacity-50"
+              >
+                {excluindo ? 'Excluindo...' : 'Excluir'}
               </button>
             </div>
           </div>

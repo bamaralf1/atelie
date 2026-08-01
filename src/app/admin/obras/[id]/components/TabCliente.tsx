@@ -3,11 +3,27 @@
 import { useState } from 'react';
 import { Obra } from '@/lib/types';
 import { montarLinkAcompanhamento } from '@/lib/utils';
+import { atualizarClienteAction } from '../actions';
 
 export function TabCliente({ obra }: { obra: Obra }) {
   const [copiado, setCopiado] = useState(false);
   const [enviadoEmail, setEnviadoEmail] = useState(false);
+  const [editando, setEditando] = useState(false);
+  const [salvando, setSalvando] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
   const link = montarLinkAcompanhamento(obra.token_acesso);
+
+  async function handleSalvar(formData: FormData) {
+    setSalvando(true);
+    setErro(null);
+    const r = await atualizarClienteAction(obra.id, formData);
+    if (r?.erro) {
+      setErro(r.erro);
+    } else {
+      setEditando(false);
+    }
+    setSalvando(false);
+  }
 
   async function copiarLink() {
     await navigator.clipboard.writeText(link);
@@ -42,10 +58,55 @@ export function TabCliente({ obra }: { obra: Obra }) {
           <div className="w-12 h-12 rounded-full bg-atelie-dourado/20 flex items-center justify-center text-atelie-douradoClaro font-display text-lg">
             {obra.cliente_nome.charAt(0).toUpperCase()}
           </div>
-          <div>
-            <p className="font-display text-lg">{obra.cliente_nome}</p>
-            <p className="text-sm text-atelie-textoMuted">{obra.cliente_email ?? 'E-mail não informado'}</p>
+          <div className="flex-1 min-w-0">
+            {editando ? (
+              <form action={handleSalvar} className="space-y-2">
+                <input
+                  name="cliente_nome"
+                  defaultValue={obra.cliente_nome}
+                  placeholder="Nome do cliente"
+                  className="input-atelie text-sm"
+                />
+                <input
+                  name="cliente_email"
+                  defaultValue={obra.cliente_email ?? ''}
+                  placeholder="E-mail do cliente"
+                  type="email"
+                  className="input-atelie text-sm"
+                />
+                <div className="flex items-center gap-2">
+                  <button
+                    type="submit"
+                    disabled={salvando}
+                    className="btn-dourado px-3 py-1.5 text-xs"
+                  >
+                    {salvando ? 'Salvando...' : 'Salvar'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditando(false)}
+                    className="btn-outline px-3 py-1.5 text-xs"
+                  >
+                    Cancelar
+                  </button>
+                  {erro && <span className="text-atelie-terracotaClaro text-xs">{erro}</span>}
+                </div>
+              </form>
+            ) : (
+              <>
+                <p className="font-display text-lg">{obra.cliente_nome}</p>
+                <p className="text-sm text-atelie-textoMuted">{obra.cliente_email ?? 'E-mail não informado'}</p>
+              </>
+            )}
           </div>
+          {!editando && (
+            <button
+              onClick={() => setEditando(true)}
+              className="btn-outline px-3 py-1.5 text-xs whitespace-nowrap shrink-0"
+            >
+              Editar
+            </button>
+          )}
         </div>
 
         <div>
