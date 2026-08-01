@@ -50,6 +50,51 @@ function IconoEtapaEntrega({ etapa, className }: { etapa: string; className?: st
   );
 }
 
+function IconoEtapaMilestone({ etapa, className }: { etapa: string; className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      {etapa === 'Esboço' && (
+        <>
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.6} d="M12 20h9" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.6} d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
+        </>
+      )}
+      {etapa === 'Imprimatura' && (
+        <>
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.6} d="M12 2l10 6-10 6L2 8l10-6z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.6} d="M2 12l10 6 10-6" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.6} d="M2 16l10 6 10-6" />
+        </>
+      )}
+      {etapa === 'Blocagem' && (
+        <>
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.6} d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.6} d="M3.27 6.96L12 12.01l8.73-5.05" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.6} d="M12 22.08V12" />
+        </>
+      )}
+      {etapa === 'Pintura' && (
+        <>
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.6} d="M9.06 11.9l8.07-8.06a2.85 2.85 0 114.03 4.03l-8.06 8.08" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.6} d="M7.07 14.94c-1.66 0-3 1.35-3 3.02 0 1.33-2.5 1.52-2 2.02 1.08 1.1 2.49 2.02 4 2.02 2.2 0 4-1.8 4-4.04a3.01 3.01 0 00-3-3.02z" />
+        </>
+      )}
+      {etapa === 'Detalhamento final' && (
+        <>
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.6} d="M11 19a8 8 0 100-16 8 8 0 000 16z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.6} d="M21 21l-4.35-4.35" />
+        </>
+      )}
+      {etapa === 'Concluída' && (
+        <>
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.6} d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.6} d="M4 22v-7" />
+        </>
+      )}
+    </svg>
+  );
+}
+
 function useScrollReveal() {
   useEffect(() => {
     const obs = new IntersectionObserver(
@@ -289,30 +334,42 @@ export function ClienteView({
             </div>
 
             {/* Milestones */}
-            <div className="relative mb-8">
+            <div className="relative mb-8 bg-gradient-to-br from-atelie-dourado/[0.07] to-transparent rounded-2xl border border-atelie-dourado/15 p-4 sm:p-5">
+              <div className="absolute -top-px left-8 right-8 h-px bg-gradient-to-r from-transparent via-atelie-dourado/40 to-transparent" />
               <ProgressBar percentual={obra.percentual_conclusao} tamanho="grande" mostrarMarcadores />
-              <div className="flex justify-between mt-3">
+              <div className="flex justify-between mt-4">
                 {milestones.map((m, i) => {
                   const atingido = obra.percentual_conclusao >= m.min;
                   const atual = obra.percentual_conclusao >= m.min && obra.percentual_conclusao < (milestones[i + 1]?.min ?? 101);
                   return (
-                    <div key={m.label} className="flex flex-col items-center gap-1.5">
+                    <div key={m.label} className="flex flex-col items-center gap-2 flex-1 min-w-0">
                       <div
-                        className={`w-6 h-6 rounded-full flex items-center justify-center transition-all duration-700 ${
-                          atingido
-                            ? 'bg-gradient-to-br from-atelie-dourado to-atelie-douradoClaro shadow-[0_0_12px_rgba(198,161,91,0.4)]'
-                            : 'bg-atelie-superficie2 border border-atelie-borda'
+                        className={`relative w-8 h-8 rounded-full flex items-center justify-center transition-all duration-700 ${
+                          atingido && !atual
+                            ? 'bg-gradient-to-br from-atelie-dourado to-atelie-douradoClaro shadow-[0_0_18px_rgba(198,161,91,0.5)] ring-4 ring-atelie-dourado/20'
+                            : atual
+                              ? 'bg-atelie-superficie2 border-2 border-atelie-dourado/60 shadow-[0_0_16px_rgba(198,161,91,0.35)] ring-4 ring-atelie-dourado/10'
+                              : 'bg-atelie-superficie2 border border-atelie-borda'
                         } ${atual ? 'scale-110' : ''}`}
                       >
-                        {atingido ? (
-                          <svg className="w-3 h-3 text-atelie-fundo" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        {atual && (
+                          <>
+                            <span className="absolute -inset-1.5 rounded-full border border-atelie-dourado/50 animate-ping" />
+                            <span className="absolute -inset-0.5 rounded-full bg-atelie-dourado/15 animate-pulseDot" />
+                          </>
+                        )}
+                        {atingido && !atual ? (
+                          <svg className="w-4 h-4 text-atelie-fundo animate-scaleIn" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                           </svg>
                         ) : (
-                          <span className="text-[8px] text-atelie-textoMuted">{i + 1}</span>
+                          <IconoEtapaMilestone
+                            etapa={m.label}
+                            className={`w-3.5 h-3.5 ${atual ? 'text-atelie-douradoClaro' : 'text-atelie-textoMuted/60'}`}
+                          />
                         )}
                       </div>
-                      <span className={`text-[9px] text-center leading-tight max-w-[48px] ${atingido ? 'text-atelie-douradoClaro font-medium' : 'text-atelie-textoMuted/50'}`}>
+                      <span className={`text-[9px] text-center leading-tight max-w-[52px] px-0.5 transition-all duration-500 ${atual ? 'text-atelie-douradoClaro font-semibold drop-shadow-[0_0_5px_rgba(198,161,91,0.5)]' : atingido ? 'text-atelie-douradoClaro font-medium' : 'text-atelie-textoMuted/50'}`}>
                         {m.label}
                       </span>
                     </div>
