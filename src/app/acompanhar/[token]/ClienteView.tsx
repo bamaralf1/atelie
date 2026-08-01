@@ -5,7 +5,6 @@ import Image from 'next/image';
 import { Obra, Material, HistoricoStatus, FotoProgresso, Comentario, ItemVisor } from '@/lib/types';
 import { useRealtimeObra } from '@/hooks/useRealtimeObra';
 import { useTempoDecorrido } from '@/hooks/useTempoDecorrido';
-import { ProgressBar } from '@/components/admin/ProgressBar';
 import { StatusBadge } from '@/components/admin/StatusBadge';
 import { Timeline } from '@/components/cliente/Timeline';
 import { Lightbox } from '@/components/cliente/Lightbox';
@@ -241,6 +240,7 @@ export function ClienteView({
     if (i >= 0) setVisorIndice(i);
   };
   const indiceEntregaAtual = indiceEntrega(obra.entrega_status);
+  const pct = Math.min(100, Math.max(0, obra.percentual_conclusao));
 
   const heroBgY = scrollY * 0.35;
   const heroOpacity = Math.max(0, 1 - scrollY / 600);
@@ -414,47 +414,76 @@ export function ClienteView({
             </div>
 
             {/* Milestones */}
-            <div className="relative mb-8 bg-gradient-to-br from-atelie-dourado/[0.07] to-transparent rounded-2xl border border-atelie-dourado/15 p-4 sm:p-5">
-              <div className="absolute -top-px left-8 right-8 h-px bg-gradient-to-r from-transparent via-atelie-dourado/40 to-transparent" />
-              <ProgressBar percentual={obra.percentual_conclusao} tamanho="grande" mostrarMarcadores />
-              <div className="flex justify-between mt-4">
-                {milestones.map((m, i) => {
-                  const atingido = obra.percentual_conclusao >= m.min;
-                  const atual = obra.percentual_conclusao >= m.min && obra.percentual_conclusao < (milestones[i + 1]?.min ?? 101);
-                  return (
-                    <div key={m.label} className="flex flex-col items-center gap-2 flex-1 min-w-0">
-                      <div
-                        className={`relative w-8 h-8 rounded-full flex items-center justify-center transition-all duration-700 ${
-                          atingido && !atual
-                            ? 'bg-gradient-to-br from-atelie-dourado to-atelie-douradoClaro shadow-[0_0_18px_rgba(198,161,91,0.5)] ring-4 ring-atelie-dourado/20'
-                            : atual
-                              ? 'bg-atelie-superficie2 border-2 border-atelie-dourado/60 shadow-[0_0_16px_rgba(198,161,91,0.35)] ring-4 ring-atelie-dourado/10'
-                              : 'bg-atelie-superficie2 border border-atelie-borda'
-                        } ${atual ? 'scale-110' : ''}`}
-                      >
-                        {atual && (
-                          <>
-                            <span className="absolute -inset-1.5 rounded-full border border-atelie-dourado/50 animate-ping" />
-                            <span className="absolute -inset-0.5 rounded-full bg-atelie-dourado/15 animate-pulseDot" />
-                          </>
-                        )}
-                        {atingido && !atual ? (
-                          <svg className="w-4 h-4 text-atelie-fundo animate-scaleIn" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                          </svg>
-                        ) : (
-                          <IconoEtapaMilestone
-                            etapa={m.label}
-                            className={`w-3.5 h-3.5 ${atual ? 'text-atelie-douradoClaro' : 'text-atelie-textoMuted/60'}`}
-                          />
-                        )}
-                      </div>
-                      <span className={`text-[9px] text-center leading-tight max-w-[52px] px-0.5 transition-all duration-500 ${atual ? 'text-atelie-douradoClaro font-semibold drop-shadow-[0_0_5px_rgba(198,161,91,0.5)]' : atingido ? 'text-atelie-douradoClaro font-medium' : 'text-atelie-textoMuted/50'}`}>
-                        {m.label}
-                      </span>
+            <div className="relative mb-8 bg-gradient-to-br from-atelie-dourado/[0.08] to-transparent rounded-3xl border border-atelie-dourado/20 p-5 sm:p-7 shadow-[0_0_40px_rgba(198,161,91,0.05)] overflow-hidden">
+              <div className="absolute -top-px left-8 right-8 h-px bg-gradient-to-r from-transparent via-atelie-dourado/50 to-transparent" />
+              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(198,161,91,0.08),transparent_60%)] pointer-events-none" />
+
+              {/* Barra principal com brilho e bolha de percentual */}
+              <div className="relative">
+                <div className="relative w-full h-4 bg-atelie-superficie2 rounded-full shadow-[inset_0_2px_4px_rgba(0,0,0,0.4)]">
+                  <div className="barra-progresso h-full rounded-full overflow-hidden" style={{ width: `${pct}%` }}>
+                    <div className="absolute inset-0 bg-gradient-to-r from-atelie-dourado via-atelie-douradoClaro to-atelie-douradoClaro" />
+                    <div className="absolute inset-0 bg-[linear-gradient(110deg,transparent_25%,rgba(255,255,255,0.4)_50%,transparent_75%)] bg-[length:200%_100%] animate-shimmer" />
+                    <div className="absolute inset-0 shadow-[inset_0_0_14px_rgba(255,255,255,0.15)]" />
+                  </div>
+                  {[25, 50, 75].map((m) => (
+                    <div key={m} className={`absolute top-0 h-full w-px ${pct >= m ? 'bg-black/30' : 'bg-atelie-borda/40'}`} style={{ left: `${m}%` }} />
+                  ))}
+                  {/* Bolha percentual */}
+                  <div className="absolute -top-9 -translate-x-1/2 transition-all duration-700 pointer-events-none" style={{ left: `${pct}%` }}>
+                    <div className="relative px-2.5 py-1 rounded-lg bg-gradient-to-br from-atelie-dourado to-atelie-douradoClaro text-atelie-fundo text-xs font-bold shadow-[0_4px_14px_rgba(198,161,91,0.45)]">
+                      {percentualExibido}%
+                      <span className="absolute left-1/2 -translate-x-1/2 -bottom-1 w-2 h-2 rotate-45 bg-atelie-douradoClaro" />
                     </div>
-                  );
-                })}
+                  </div>
+                  {/* Ponto guia */}
+                  <div className="absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-atelie-dourado shadow-[0_0_16px_rgba(198,161,91,0.9)] ring-4 ring-atelie-dourado/20 animate-pulseDot" style={{ left: `calc(${pct}% - 8px)` }} />
+                </div>
+              </div>
+
+              {/* Stepper de marcos */}
+              <div className="relative mt-9">
+                <div className="flex justify-between items-start">
+                  {milestones.map((m, i) => {
+                    const atingido = pct >= m.min;
+                    const atual = pct >= m.min && pct < (milestones[i + 1]?.min ?? 101);
+                    return (
+                      <div key={m.label} className="flex flex-col items-center gap-2 flex-1 min-w-0">
+                        <div className="w-full flex items-center">
+                          <div className={`h-[3px] flex-1 rounded-full transition-all duration-700 ${i === 0 ? 'bg-transparent' : atingido ? 'bg-gradient-to-r from-atelie-dourado via-atelie-douradoClaro to-atelie-dourado bg-[length:200%_100%] animate-shimmer shadow-[0_0_8px_rgba(198,161,91,0.5)]' : 'bg-atelie-superficie2'}`} />
+                          <div className={`relative w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-all duration-500 ${
+                            atingido && !atual
+                              ? 'bg-gradient-to-br from-atelie-dourado to-atelie-douradoClaro shadow-[0_0_20px_rgba(198,161,91,0.55)] ring-4 ring-atelie-dourado/20'
+                              : atual
+                                ? 'bg-atelie-superficie2 border-2 border-atelie-dourado shadow-[0_0_18px_rgba(198,161,91,0.4)] ring-4 ring-atelie-dourado/15'
+                                : 'bg-atelie-superficie2 border border-atelie-borda'
+                          }`}>
+                            {atual && (
+                              <>
+                                <span className="absolute -inset-1.5 rounded-full border border-atelie-dourado/60 animate-ping" />
+                                <span className="absolute -inset-0.5 rounded-full bg-atelie-dourado/20 animate-pulseDot" />
+                              </>
+                            )}
+                            {atingido && !atual ? (
+                              <svg className="w-4 h-4 text-atelie-fundo animate-scaleIn" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                              </svg>
+                            ) : (
+                              <IconoEtapaMilestone etapa={m.label} className={`w-4 h-4 ${atual ? 'text-atelie-douradoClaro' : 'text-atelie-textoMuted/60'}`} />
+                            )}
+                          </div>
+                          <div className={`h-[3px] flex-1 rounded-full transition-all duration-700 ${i === milestones.length - 1 ? 'bg-transparent' : atingido ? 'bg-gradient-to-r from-atelie-dourado via-atelie-douradoClaro to-atelie-dourado bg-[length:200%_100%] animate-shimmer shadow-[0_0_8px_rgba(198,161,91,0.5)]' : 'bg-atelie-superficie2'}`} />
+                        </div>
+                        <span className={`text-[9px] sm:text-[10px] text-center leading-tight max-w-[56px] px-0.5 transition-all duration-500 ${atual ? 'text-atelie-douradoClaro font-semibold drop-shadow-[0_0_5px_rgba(198,161,91,0.5)]' : atingido ? 'text-atelie-douradoClaro font-medium' : 'text-atelie-textoMuted/50'}`}>
+                          {m.label}
+                        </span>
+                        <span className={`text-[8px] font-mono px-1.5 py-0.5 rounded-full transition-all duration-500 ${atingido ? 'bg-atelie-dourado/10 text-atelie-dourado/80 border border-atelie-dourado/15' : 'bg-atelie-superficie2 text-atelie-textoMuted/40 border border-atelie-borda/40'}`}>
+                          {m.min}%
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
 
