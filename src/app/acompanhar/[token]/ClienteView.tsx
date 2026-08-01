@@ -318,49 +318,60 @@ export function ClienteView({
 
             {/* Entrega */}
             <div className="mt-8 pt-7 border-t border-atelie-borda/40">
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-400/20 to-emerald-400/5 border border-emerald-400/20 flex items-center justify-center">
-                      <svg className="w-5 h-5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M12 3l1.912 5.813a2 2 0 001.272 1.272L21 12l-5.816 1.915a2 2 0 00-1.272 1.272L12 21l-1.912-5.816a2 2 0 00-1.272-1.272L3 12l5.816-1.915a2 2 0 001.272-1.272L12 3z" />
-                      </svg>
-                    </div>
-                    <div>
-                      <h3 className="font-display text-lg text-atelie-texto">Entrega</h3>
-                      <p className="text-atelie-textoMuted text-xs mt-0.5">Acompanhe o envio da obra</p>
-                    </div>
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="relative w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-400/25 to-emerald-400/5 border border-emerald-400/30 flex items-center justify-center overflow-hidden shadow-[0_0_18px_rgba(52,211,153,0.15)]">
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent bg-[length:200%_100%] animate-shimmer" />
+                    <svg className="w-5 h-5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M12 3l1.912 5.813a2 2 0 001.272 1.272L21 12l-5.816 1.915a2 2 0 00-1.272 1.272L12 21l-1.912-5.816a2 2 0 00-1.272-1.272L3 12l5.816-1.915a2 2 0 001.272-1.272L12 3z" />
+                    </svg>
                   </div>
-                  {obra.entrega_status ? (
-                    <StatusBadge status={obra.entrega_status} tamanho="normal" />
-                  ) : (
-                    <span className="text-xs text-atelie-textoMuted/60 italic">Ainda em produção</span>
-                  )}
+                  <div>
+                    <h3 className="font-display text-lg text-atelie-texto">Entrega</h3>
+                    <p className="text-atelie-textoMuted text-xs mt-0.5">Acompanhe o envio da obra</p>
+                  </div>
                 </div>
+                {obra.entrega_status ? (
+                  <StatusBadge status={obra.entrega_status} tamanho="normal" />
+                ) : (
+                  <span className="text-xs text-atelie-textoMuted/60 italic">Ainda em produção</span>
+                )}
+              </div>
 
+              <div className="relative">
+                <div className="absolute -top-4 left-6 right-6 h-px bg-gradient-to-r from-transparent via-emerald-400/25 to-transparent" />
                 <div className="flex justify-between items-start">
                   {ENTREGA_OPCOES.map((etapa, i) => {
                     const feita = indiceEntregaAtual >= i;
                     const atual = indiceEntregaAtual === i;
                     return (
-                      <div key={etapa} className="flex flex-col items-center gap-2 flex-1 min-w-0">
+                      <div key={etapa} className="flex flex-col items-center gap-2.5 flex-1 min-w-0">
                         <div className="w-full flex items-center">
-                          <div className={`h-1 flex-1 rounded-full transition-all duration-700 ${i === 0 ? 'bg-transparent' : feita ? 'bg-gradient-to-r from-emerald-500 to-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.4)]' : 'bg-atelie-superficie2'}`} />
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-all duration-500 ${
+                          <div className={`h-[3px] flex-1 rounded-full transition-all duration-700 ${i === 0 ? 'bg-transparent' : feita ? 'bg-gradient-to-r from-emerald-500 via-teal-300 to-emerald-500 bg-[length:200%_100%] animate-shimmer shadow-[0_0_10px_rgba(52,211,153,0.5)]' : 'bg-atelie-superficie2'}`} />
+                          <div className={`relative w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-all duration-500 ${
                             feita
-                              ? 'bg-gradient-to-br from-emerald-400 to-emerald-500 shadow-[0_0_14px_rgba(52,211,153,0.45)]'
-                              : 'bg-atelie-superficie2 border border-atelie-borda'
-                          } ${atual ? 'scale-110' : ''}`}>
+                              ? 'bg-gradient-to-br from-emerald-400 via-emerald-500 to-teal-400 shadow-[0_0_22px_rgba(52,211,153,0.55)] ring-4 ring-emerald-400/20'
+                              : atual
+                                ? 'bg-gradient-to-br from-emerald-400/30 to-emerald-400/5 border-2 border-emerald-400/50 shadow-[0_0_18px_rgba(52,211,153,0.35)] ring-4 ring-emerald-400/10'
+                                : 'bg-atelie-superficie2 border border-atelie-borda'
+                          }`}>
+                            {atual && (
+                              <>
+                                <span className="absolute -inset-1.5 rounded-full border border-emerald-400/40 animate-ping" />
+                                <span className="absolute -inset-0.5 rounded-full bg-emerald-400/15 animate-pulseDot" />
+                              </>
+                            )}
                             {feita ? (
-                              <svg className="w-4 h-4 text-atelie-fundo" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <svg className="w-4 h-4 text-atelie-fundo animate-scaleIn" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                               </svg>
                             ) : (
-                              <span className="text-[9px] text-atelie-textoMuted">{i + 1}</span>
+                              <span className={`text-[10px] font-medium ${atual ? 'text-emerald-200' : 'text-atelie-textoMuted/70'}`}>{i + 1}</span>
                             )}
                           </div>
-                          <div className={`h-1 flex-1 rounded-full transition-all duration-700 ${i === ENTREGA_OPCOES.length - 1 ? 'bg-transparent' : feita ? 'bg-gradient-to-r from-emerald-500 to-emerald-400' : 'bg-atelie-superficie2'}`} />
+                          <div className={`h-[3px] flex-1 rounded-full transition-all duration-700 ${i === ENTREGA_OPCOES.length - 1 ? 'bg-transparent' : feita ? 'bg-gradient-to-r from-emerald-500 via-teal-300 to-emerald-500 bg-[length:200%_100%] animate-shimmer shadow-[0_0_10px_rgba(52,211,153,0.5)]' : 'bg-atelie-superficie2'}`} />
                         </div>
-                        <span className={`text-[10px] text-center leading-tight px-1 ${feita ? 'text-emerald-300 font-medium' : 'text-atelie-textoMuted/50'}`}>
+                        <span className={`text-[10px] text-center leading-tight px-1 transition-all duration-500 ${feita ? 'text-emerald-300 font-semibold drop-shadow-[0_0_6px_rgba(52,211,153,0.5)]' : atual ? 'text-emerald-200 font-semibold' : 'text-atelie-textoMuted/50'}`}>
                           {etapa}
                         </span>
                       </div>
@@ -368,6 +379,7 @@ export function ClienteView({
                   })}
                 </div>
               </div>
+            </div>
           </div>
         </section>
 
