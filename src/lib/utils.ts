@@ -1,4 +1,4 @@
-import { StatusObra } from './types';
+import { StatusObra, EntregaStatus, ENTREGA_OPCOES } from './types';
 
 /** Formata um valor numérico como moeda brasileira (R$). */
 export function formatarMoeda(valor: number): string {
@@ -47,12 +47,18 @@ export function corDoStatus(status: StatusObra | string): string {
   const mapa: Record<string, string> = {
     'Esboço': 'bg-atelie-textoMuted/20 text-atelie-texto border-atelie-borda',
     'Imprimatura': 'bg-atelie-terracota/15 text-atelie-terracotaClaro border-atelie-terracota/40',
-    'Pintura em andamento': 'bg-atelie-dourado/15 text-atelie-douradoClaro border-atelie-dourado/40',
-    'Retoques finais': 'bg-atelie-dourado/20 text-atelie-douradoClaro border-atelie-dourado/50',
-    'Verniz final': 'bg-atelie-terracota/20 text-atelie-terracotaClaro border-atelie-terracota/50',
+    'Blocagem': 'bg-atelie-terracota/15 text-atelie-terracotaClaro border-atelie-terracota/40',
+    'Pintura': 'bg-atelie-dourado/15 text-atelie-douradoClaro border-atelie-dourado/40',
+    'Detalhamento final': 'bg-atelie-dourado/20 text-atelie-douradoClaro border-atelie-dourado/50',
     'Concluída': 'bg-emerald-900/30 text-emerald-300 border-emerald-700/50',
   };
   return mapa[status] ?? mapa['Esboço'];
+}
+
+/** Retorna o índice (0..2) da etapa de entrega atual; -1 se ainda não iniciada. */
+export function indiceDaEntrega(status: EntregaStatus | null): number {
+  if (!status) return -1;
+  return ENTREGA_OPCOES.indexOf(status);
 }
 
 /** Monta a URL pública de acompanhamento a partir do token. */

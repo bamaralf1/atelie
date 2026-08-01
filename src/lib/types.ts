@@ -3,19 +3,24 @@
 export type StatusObra =
   | 'Esboço'
   | 'Imprimatura'
-  | 'Pintura em andamento'
-  | 'Retoques finais'
-  | 'Verniz final'
+  | 'Blocagem'
+  | 'Pintura'
+  | 'Detalhamento final'
   | 'Concluída';
 
 export const STATUS_OPCOES: StatusObra[] = [
   'Esboço',
   'Imprimatura',
-  'Pintura em andamento',
-  'Retoques finais',
-  'Verniz final',
+  'Blocagem',
+  'Pintura',
+  'Detalhamento final',
   'Concluída',
 ];
+
+/** Etapas da entrega da obra, exibidas no segundo slider de progresso. */
+export type EntregaStatus = 'Secagem' | 'Embalada' | 'Enviada';
+
+export const ENTREGA_OPCOES: EntregaStatus[] = ['Secagem', 'Embalada', 'Enviada'];
 
 export interface Obra {
   id: string;
@@ -33,6 +38,8 @@ export interface Obra {
   exibir_custos: boolean;
   imagem_referencia_url: string | null;
   imagem_obra_atual_url: string | null;
+  entrega_status: EntregaStatus | null;
+  rotulos: string[];
   created_at: string;
   updated_at: string;
 }

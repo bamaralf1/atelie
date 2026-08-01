@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo, useState } from 'react';
 import Image from 'next/image';
 import { Obra, Material, HistoricoStatus, FotoProgresso } from '@/lib/types';
 import { useRealtimeObra } from '@/hooks/useRealtimeObra';
@@ -8,6 +9,8 @@ import { ProgressBar } from '@/components/admin/ProgressBar';
 import { StatusBadge } from '@/components/admin/StatusBadge';
 import { Timeline } from '@/components/cliente/Timeline';
 import { Lightbox } from '@/components/cliente/Lightbox';
+import { ProgressoEntrega } from '@/components/cliente/ProgressoEntrega';
+import { VisorImagem, ItemVisor } from '@/components/cliente/VisorImagem';
 import { PdfButton } from '@/components/cliente/PdfButton';
 import { formatarData, formatarMoeda } from '@/lib/utils';
 
@@ -29,7 +32,38 @@ export function ClienteView({
     fotos: fotosIniciais,
   });
 
+  const [visor, setVisor] = useState<{ itens: ItemVisor[]; indice: number } | null>(null);
+
   const tempoAtualizacao = useTempoDecorrido(obra.updated_at);
+
+  // Todas as imagens (destaque, galeria e referência) reunidas em um único
+  // conjunto: o cliente navega entre elas com o visualizador interativo.
+  const itensVisor = useMemo<ItemVisor[]>(() => {
+    const itens: ItemVisor[] = [];
+    if (obra.imagem_obra_atual_url) {
+      itens.push({
+        id: 'principal',
+        src: obra.imagem_obra_atual_url,
+        legenda: 'A obra hoje',
+        etapa: obra.status_atual,
+        data: obra.updated_at,
+      });
+    }
+    for (const f of fotos) {
+      itens.push({ id: `foto-${f.id}`, src: f.url_foto, legenda: f.legenda, etapa: f.etapa, data: f.data_upload });
+    }
+    if (obra.imagem_referencia_url) {
+      itens.push({ id: 'referencia', src: obra.imagem_referencia_url, legenda: 'Referência inicial', etapa: 'Referência' });
+    }
+    return itens;
+  }, [obra.imagem_obra_atual_url, obra.imagem_referencia_url, obra.status_atual, obra.updated_at, fotos]);
+
+  function abrirVisor(indice: number) {
+    if (itensVisor.length === 0) return;
+    setVisor({ itens: itensVisor, indice: Math.max(0, Math.min(indice, itensVisor.length - 1)) });
+  }
+
+  const deslocamentoGaleria = obra.imagem_obra_atual_url ? 1 : 0;
 
   return (
     <div className="min-h-screen bg-atelie-fundo pb-16">
@@ -60,13 +94,31 @@ export function ClienteView({
           <p className="text-right text-atelie-douradoClaro font-mono text-sm mt-2">{obra.percentual_conclusao}%</p>
         </section>
 
+        {/* Entrega */}
+        <section className="bg-atelie-superficie border border-atelie-borda rounded-lg p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-display text-lg">Entrega</h2>
+            <span className="text-xs text-atelie-textoMuted">Etapas após a conclusão da pintura</span>
+          </div>
+          <ProgressoEntrega status={obra.entrega_status} />
+        </section>
+
         {/* Foto da obra em destaque */}
         {obra.imagem_obra_atual_url && (
           <section>
             <h2 className="font-display text-xl mb-3">A obra hoje</h2>
-            <div className="relative w-full aspect-[4/3] rounded-lg overflow-hidden border border-atelie-borda">
+            <button
+              onClick={() => abrirVisor(0)}
+              className="group relative block w-full aspect-[4/3] rounded-lg overflow-hidden border border-atelie-borda hover:border-atelie-dourado/60 transition-colors"
+              aria-label="Ampliar foto da obra"
+            >
               <Image src={obra.imagem_obra_atual_url} alt={obra.titulo} fill className="object-cover" priority />
-            </div>
+              <span className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/30 transition-colors">
+                <span className="opacity-0 group-hover:opacity-100 text-atelie-douradoClaro text-sm border border-atelie-dourado/60 bg-atelie-fundo/80 px-3 py-1.5 rounded-md transition-opacity">
+                  Clique para ampliar
+                </span>
+              </span>
+            </button>
           </section>
         )}
 
@@ -74,7 +126,7 @@ export function ClienteView({
         {fotos.length > 0 && (
           <section>
             <h2 className="font-display text-xl mb-3">Galeria de progresso</h2>
-            <Lightbox fotos={fotos} />
+            <Lightbox fotos={fotos} aoAbrir={(i) => abrirVisor(deslocamentoGaleria + i)} />
           </section>
         )}
 
@@ -82,9 +134,18 @@ export function ClienteView({
         {obra.imagem_referencia_url && (
           <section>
             <h2 className="font-display text-xl mb-3">Referência inicial</h2>
-            <div className="relative w-full aspect-[4/3] rounded-lg overflow-hidden border border-atelie-borda">
+            <button
+              onClick={() => abrirVisor(itensVisor.length - 1)}
+              className="group relative block w-full aspect-[4/3] rounded-lg overflow-hidden border border-atelie-borda hover:border-atelie-dourado/60 transition-colors"
+              aria-label="Ampliar imagem de referência"
+            >
               <Image src={obra.imagem_referencia_url} alt="Referência" fill className="object-cover" />
-            </div>
+              <span className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/30 transition-colors">
+                <span className="opacity-0 group-hover:opacity-100 text-atelie-douradoClaro text-sm border border-atelie-dourado/60 bg-atelie-fundo/80 px-3 py-1.5 rounded-md transition-opacity">
+                  Clique para ampliar
+                </span>
+              </span>
+            </button>
           </section>
         )}
 
@@ -138,6 +199,9 @@ export function ClienteView({
           <PdfButton obra={obra} materiais={materiais} historico={historico} />
         </div>
       </div>
+
+      {/* Visualizador interativo de fotos */}
+      {visor && <VisorImagem itens={visor.itens} indiceInicial={visor.indice} onFechar={() => setVisor(null)} />}
     </div>
   );
 }

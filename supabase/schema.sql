@@ -29,7 +29,38 @@ create table if not exists obras (
 );
 
 comment on column obras.status_atual is
-  'Um de: Esboço, Imprimatura, Pintura em andamento, Retoques finais, Verniz final, Concluída';
+  'Um de: Esboço, Imprimatura, Blocagem, Pintura, Detalhamento final, Concluída';
+
+-- ---------------------------------------------------------
+-- Migração: novas colunas de entrega e de rótulos internos
+-- ---------------------------------------------------------
+alter table obras add column if not exists entrega_status text;
+alter table obras add column if not exists rotulos text[] not null default '{}';
+
+comment on column obras.entrega_status is
+  'Um de: Secagem, Embalada, Enviada. NULL = obra ainda no ateliê.';
+comment on column obras.rotulos is
+  'Rótulos internos do artista (ex: "pagamento atrasado", "prioridade").';
+
+-- Renomeia os status antigos para os novos nomes (mapeamento posicional),
+-- tanto na obra quanto no histórico da linha do tempo.
+update obras set status_atual = case status_atual
+  when 'Pintura em andamento' then 'Blocagem'
+  when 'Retoques finais' then 'Pintura'
+  else status_atual
+end;
+
+update historico_status set status_novo = case status_novo
+  when 'Pintura em andamento' then 'Blocagem'
+  when 'Retoques finais' then 'Pintura'
+  else status_novo
+end;
+
+update historico_status set status_anterior = case status_anterior
+  when 'Pintura em andamento' then 'Blocagem'
+  when 'Retoques finais' then 'Pintura'
+  else status_anterior
+end;
 
 -- ---------------------------------------------------------
 -- Materiais utilizados em cada obra
@@ -178,8 +209,22 @@ drop policy if exists "Leitura publica progresso" on storage.objects;
 create policy "Leitura publica progresso" on storage.objects
   for select using (bucket_id = 'progresso');
 
--- Habilitar Realtime nas tabelas usadas pela página do cliente
-alter publication supabase_realtime add table obras;
-alter publication supabase_realtime add table historico_status;
-alter publication supabase_realtime add table fotos_progresso;
-alter publication supabase_realtime add table materiais;
+-- Habilitar Realtime nas tabelas usadas pela página do cliente.
+-- (DO block para compatibilidade com todas as versões do Postgres, já que
+-- "add table if not exists" só existe a partir do PostgreSQL 15.)
+do $$
+declare
+  t text;
+begin
+  foreach t in array array['obras','historico_status','fotos_progresso','materiais']
+  loop
+    if not exists (
+      select 1 from pg_publication_tables
+      where pubname = 'supabase_realtime'
+        and schemaname = 'public'
+        and tablename = t
+    ) then
+      execute format('alter publication supabase_realtime add table %I', t);
+    end if;
+  end loop;
+end $$;

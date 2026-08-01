@@ -30,6 +30,19 @@ export function ObraCard({ obra }: { obra: Obra }) {
         <h3 className="font-display text-lg text-atelie-texto truncate">{obra.titulo}</h3>
         <p className="text-sm text-atelie-textoMuted mb-3">{obra.cliente_nome}</p>
 
+        {obra.rotulos && obra.rotulos.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 mb-3">
+            {obra.rotulos.map((r) => (
+              <span
+                key={r}
+                className="inline-block bg-atelie-dourado/15 border border-atelie-dourado/40 text-atelie-douradoClaro text-[10px] px-2 py-0.5 rounded-full"
+              >
+                {r}
+              </span>
+            ))}
+          </div>
+        )}
+
         <div className="mb-3">
           <StatusBadge status={obra.status_atual} />
         </div>
