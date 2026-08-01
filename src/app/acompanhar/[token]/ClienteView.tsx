@@ -473,9 +473,13 @@ export function ClienteView({
         {/* Comparação */}
         {temComparacao && (
           <section id="secao-comparacao" className="scroll-mt-24 reveal">
-            <h2 className="font-display text-2xl sm:text-3xl text-atelie-texto mb-1">Referência × Progresso</h2>
+            <div className="flex items-center gap-3 mb-1">
+              <span className="w-8 h-[3px] rounded-full bg-gradient-to-r from-atelie-dourado to-atelie-douradoClaro shadow-[0_0_8px_rgba(198,161,91,0.5)]" />
+              <h2 className="font-display text-2xl sm:text-3xl text-atelie-texto">Referência × Progresso</h2>
+            </div>
             <p className="text-atelie-textoMuted text-sm mb-5">Compare a foto de referência com o estado atual da obra</p>
-            <div className="rounded-2xl overflow-hidden border border-atelie-borda/60 shadow-xl shadow-black/20">
+            <div className="relative rounded-3xl overflow-hidden border border-atelie-borda/60 shadow-xl shadow-black/20 bg-atelie-superficie/40 backdrop-blur-xl hover:border-atelie-dourado/30 transition-colors duration-500">
+              <div className="absolute -top-px left-8 right-8 h-px bg-gradient-to-r from-transparent via-atelie-dourado/40 to-transparent" />
               <ComparacaoSlider
                 imagemAntes={obra.imagem_referencia_url!}
                 imagemDepois={obra.imagem_obra_atual_url!}
@@ -490,11 +494,14 @@ export function ClienteView({
         {/* Foto destaque */}
         {!temComparacao && obra.imagem_obra_atual_url && (
           <section className="reveal">
-            <h2 className="font-display text-2xl sm:text-3xl text-atelie-texto mb-1">A obra hoje</h2>
+            <div className="flex items-center gap-3 mb-1">
+              <span className="w-8 h-[3px] rounded-full bg-gradient-to-r from-atelie-dourado to-atelie-douradoClaro shadow-[0_0_8px_rgba(198,161,91,0.5)]" />
+              <h2 className="font-display text-2xl sm:text-3xl text-atelie-texto">A obra hoje</h2>
+            </div>
             <p className="text-atelie-textoMuted text-sm mb-5">Estado mais recente da pintura</p>
             <button
               onClick={() => abrirVisor('atual')}
-              className="relative w-full aspect-[16/9] rounded-2xl overflow-hidden border border-atelie-borda/60 shadow-xl shadow-black/20 group cursor-zoom-in"
+              className="relative w-full aspect-[16/9] rounded-3xl overflow-hidden border border-atelie-borda/60 shadow-xl shadow-black/20 group cursor-zoom-in hover:border-atelie-dourado/40 transition-colors duration-500"
               aria-label="Ampliar foto da obra"
             >
               <Image src={obra.imagem_obra_atual_url} alt={obra.titulo} fill className="object-cover transition-transform duration-700 group-hover:scale-105" priority />
@@ -514,10 +521,13 @@ export function ClienteView({
           <section id="secao-galeria" className="scroll-mt-24 reveal">
             <div className="flex items-end justify-between mb-5">
               <div>
-                <h2 className="font-display text-2xl sm:text-3xl text-atelie-texto mb-1">Galeria de progresso</h2>
+                <div className="flex items-center gap-3 mb-1">
+                  <span className="w-8 h-[3px] rounded-full bg-gradient-to-r from-atelie-dourado to-atelie-douradoClaro shadow-[0_0_8px_rgba(198,161,91,0.5)]" />
+                  <h2 className="font-display text-2xl sm:text-3xl text-atelie-texto">Galeria de progresso</h2>
+                </div>
                 <p className="text-atelie-textoMuted text-sm">Registro fotográfico de cada etapa</p>
               </div>
-              <span className="text-xs text-atelie-textoMuted/60 font-mono shrink-0 ml-4">{fotos.length} foto{fotos.length !== 1 ? 's' : ''}</span>
+              <span className="text-xs text-atelie-douradoClaro font-mono shrink-0 ml-4 px-3 py-1.5 rounded-full bg-atelie-dourado/10 border border-atelie-dourado/25 shadow-[0_0_12px_rgba(198,161,91,0.15)]">{fotos.length} foto{fotos.length !== 1 ? 's' : ''}</span>
             </div>
             <Lightbox fotos={fotos} />
           </section>
@@ -526,11 +536,14 @@ export function ClienteView({
         {/* Referência isolada */}
         {!temComparacao && !obra.imagem_obra_atual_url && obra.imagem_referencia_url && (
           <section className="reveal">
-            <h2 className="font-display text-2xl sm:text-3xl text-atelie-texto mb-1">Referência inicial</h2>
+            <div className="flex items-center gap-3 mb-1">
+              <span className="w-8 h-[3px] rounded-full bg-gradient-to-r from-atelie-dourado to-atelie-douradoClaro shadow-[0_0_8px_rgba(198,161,91,0.5)]" />
+              <h2 className="font-display text-2xl sm:text-3xl text-atelie-texto">Referência inicial</h2>
+            </div>
             <p className="text-atelie-textoMuted text-sm mb-5">A imagem que serviu de inspiração</p>
             <button
               onClick={() => abrirVisor('referencia')}
-              className="relative w-full aspect-[16/9] rounded-2xl overflow-hidden border border-atelie-borda/60 shadow-xl shadow-black/20 group cursor-zoom-in"
+              className="relative w-full aspect-[16/9] rounded-3xl overflow-hidden border border-atelie-borda/60 shadow-xl shadow-black/20 group cursor-zoom-in hover:border-atelie-dourado/40 transition-colors duration-500"
               aria-label="Ampliar referência"
             >
               <Image src={obra.imagem_referencia_url} alt="Referência" fill className="object-cover transition-transform duration-700 group-hover:scale-105" />
@@ -547,7 +560,10 @@ export function ClienteView({
 
         {/* Timeline */}
         <section id="secao-timeline" className="scroll-mt-24 reveal">
-          <h2 className="font-display text-2xl sm:text-3xl text-atelie-texto mb-1">Linha do tempo</h2>
+          <div className="flex items-center gap-3 mb-1">
+            <span className="w-8 h-[3px] rounded-full bg-gradient-to-r from-atelie-dourado to-atelie-douradoClaro shadow-[0_0_8px_rgba(198,161,91,0.5)]" />
+            <h2 className="font-display text-2xl sm:text-3xl text-atelie-texto">Linha do tempo</h2>
+          </div>
           <p className="text-atelie-textoMuted text-sm mb-5">Cada mudança de status registrada</p>
           <Timeline historico={historico} fotos={fotos} />
         </section>
@@ -565,9 +581,13 @@ export function ClienteView({
         {/* Materiais */}
         {obra.exibir_custos && (
           <section id="secao-materiais" className="scroll-mt-24 reveal">
-            <h2 className="font-display text-2xl sm:text-3xl text-atelie-texto mb-1">Materiais utilizados</h2>
+            <div className="flex items-center gap-3 mb-1">
+              <span className="w-8 h-[3px] rounded-full bg-gradient-to-r from-atelie-dourado to-atelie-douradoClaro shadow-[0_0_8px_rgba(198,161,91,0.5)]" />
+              <h2 className="font-display text-2xl sm:text-3xl text-atelie-texto">Materiais utilizados</h2>
+            </div>
             <p className="text-atelie-textoMuted text-sm mb-5">Transparência sobre cada insumo da obra</p>
-            <div className="bg-atelie-superficie/60 backdrop-blur-xl border border-atelie-borda/60 rounded-3xl overflow-hidden shadow-xl shadow-black/20">
+            <div className="relative bg-atelie-superficie/60 backdrop-blur-xl border border-atelie-borda/60 rounded-3xl overflow-hidden shadow-xl shadow-black/20 hover:border-atelie-dourado/30 transition-colors duration-500">
+              <div className="absolute -top-px left-8 right-8 h-px bg-gradient-to-r from-transparent via-atelie-dourado/30 to-transparent" />
               <div className="divide-y divide-atelie-borda/50">
                 {materiais.map((m) => (
                   <div key={m.id} className="flex items-center justify-between px-5 sm:px-7 py-4 hover:bg-atelie-dourado/[0.02] transition-colors group">
@@ -619,7 +639,10 @@ export function ClienteView({
         {/* Observações */}
         {obra.observacoes && (
           <section id="secao-observacoes" className="scroll-mt-24 reveal">
-            <h2 className="font-display text-2xl sm:text-3xl text-atelie-texto mb-1">Observações do artista</h2>
+            <div className="flex items-center gap-3 mb-1">
+              <span className="w-8 h-[3px] rounded-full bg-gradient-to-r from-atelie-dourado to-atelie-douradoClaro shadow-[0_0_8px_rgba(198,161,91,0.5)]" />
+              <h2 className="font-display text-2xl sm:text-3xl text-atelie-texto">Observações do artista</h2>
+            </div>
             <p className="text-atelie-textoMuted text-sm mb-5">Notas e detalhes sobre o processo criativo</p>
             <div className="relative bg-atelie-superficie/60 backdrop-blur-xl border border-atelie-borda/60 rounded-3xl p-6 sm:p-8 shadow-xl shadow-black/20">
               <div className="absolute -top-px left-8 right-8 h-px bg-gradient-to-r from-transparent via-atelie-dourado/30 to-transparent" />
@@ -645,7 +668,7 @@ export function ClienteView({
               const texto = encodeURIComponent(`🎨 Acompanhe o progresso da obra "${obra.titulo}" em tempo real:\n\n${link}`);
               window.open(`https://wa.me/?text=${texto}`, '_blank');
             }}
-            className="group relative px-6 py-3 rounded-xl border border-atelie-borda/60 text-atelie-textoMuted hover:text-atelie-texto hover:border-atelie-dourado/40 transition-all duration-300 text-sm overflow-hidden"
+            className="group relative px-6 py-3 rounded-xl border border-atelie-borda/60 text-atelie-textoMuted hover:text-atelie-texto hover:border-atelie-dourado/40 hover:shadow-dourado-glow transition-all duration-300 text-sm overflow-hidden"
           >
             <span className="absolute inset-0 bg-gradient-to-r from-atelie-dourado/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             <span className="relative flex items-center gap-2">
