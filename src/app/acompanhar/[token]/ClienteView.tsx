@@ -241,6 +241,7 @@ export function ClienteView({
   };
   const indiceEntregaAtual = indiceEntrega(obra.entrega_status);
   const pct = Math.min(100, Math.max(0, obra.percentual_conclusao));
+  const pctEntrega = indiceEntregaAtual >= 0 ? ((indiceEntregaAtual + 1) / ENTREGA_OPCOES.length) * 100 : 0;
 
   const heroBgY = scrollY * 0.35;
   const heroOpacity = Math.max(0, 1 - scrollY / 600);
@@ -527,18 +528,43 @@ export function ClienteView({
                 )}
               </div>
 
-              <div className="relative bg-gradient-to-br from-emerald-400/[0.06] to-transparent rounded-2xl border border-emerald-400/10 p-4 sm:p-5">
+              <div className="relative bg-gradient-to-br from-emerald-400/[0.06] to-transparent rounded-2xl border border-emerald-400/10 p-4 sm:p-5 overflow-hidden">
                 <div className="absolute -top-px left-8 right-8 h-px bg-gradient-to-r from-transparent via-emerald-400/40 to-transparent" />
-                <div className="flex justify-between items-start">
+                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(52,211,153,0.06),transparent_60%)] pointer-events-none" />
+
+                {/* Barra principal esmeralda com brilho e bolha */}
+                <div className="relative">
+                  <div className="relative w-full h-4 bg-atelie-superficie2 rounded-full shadow-[inset_0_2px_4px_rgba(0,0,0,0.4)]">
+                    <div className="barra-progresso h-full rounded-full overflow-hidden" style={{ width: `${pctEntrega}%` }}>
+                      <div className="absolute inset-0 bg-gradient-to-r from-emerald-500 via-teal-300 to-emerald-400" />
+                      <div className="absolute inset-0 bg-[linear-gradient(110deg,transparent_25%,rgba(255,255,255,0.4)_50%,transparent_75%)] bg-[length:200%_100%] animate-shimmer" />
+                      <div className="absolute inset-0 shadow-[inset_0_0_14px_rgba(255,255,255,0.15)]" />
+                    </div>
+                    {ENTREGA_OPCOES.map((_, i) =>
+                      i > 0 ? (
+                        <div key={i} className={`absolute top-0 h-full w-px ${pctEntrega >= (i / (ENTREGA_OPCOES.length - 1)) * 100 ? 'bg-black/30' : 'bg-atelie-borda/40'}`} style={{ left: `${(i / (ENTREGA_OPCOES.length - 1)) * 100}%` }} />
+                      ) : null
+                    )}
+                    <div className="absolute -top-9 -translate-x-1/2 transition-all duration-700 pointer-events-none" style={{ left: `${pctEntrega}%` }}>
+                      <div className="relative px-2.5 py-1 rounded-lg bg-gradient-to-br from-emerald-400 to-teal-400 text-atelie-fundo text-xs font-bold shadow-[0_4px_14px_rgba(52,211,153,0.45)]">
+                        {Math.round(pctEntrega)}%
+                        <span className="absolute left-1/2 -translate-x-1/2 -bottom-1 w-2 h-2 rotate-45 bg-teal-400" />
+                      </div>
+                    </div>
+                    <div className="absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-emerald-400 shadow-[0_0_16px_rgba(52,211,153,0.9)] ring-4 ring-emerald-400/20 animate-pulseDot" style={{ left: `calc(${pctEntrega}% - 8px)` }} />
+                  </div>
+                </div>
+
+                <div className="flex justify-between items-start mt-9">
                   {ENTREGA_OPCOES.map((etapa, i) => {
                     const feita = indiceEntregaAtual >= i;
                     const atual = indiceEntregaAtual === i;
                     const proxima = !feita && i === indiceEntregaAtual + 1;
                     return (
-                      <div key={etapa} className="flex flex-col items-center gap-2.5 flex-1 min-w-0">
+                      <div key={etapa} className="flex flex-col items-center gap-2 flex-1 min-w-0">
                         <div className="w-full flex items-center">
                           <div className={`h-[3px] flex-1 rounded-full transition-all duration-700 ${i === 0 ? 'bg-transparent' : feita ? 'bg-gradient-to-r from-emerald-500 via-teal-300 to-emerald-500 bg-[length:200%_100%] animate-shimmer shadow-[0_0_10px_rgba(52,211,153,0.5)]' : 'bg-atelie-superficie2'}`} />
-                          <div className={`relative w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-all duration-500 ${
+                          <div className={`relative w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-all duration-500 ${
                             feita
                               ? 'bg-gradient-to-br from-emerald-400 via-emerald-500 to-teal-400 shadow-[0_0_22px_rgba(52,211,153,0.55)] ring-4 ring-emerald-400/20'
                               : atual
@@ -569,6 +595,9 @@ export function ClienteView({
                         </div>
                         <span className={`text-[10px] text-center leading-tight px-1 transition-all duration-500 ${feita ? 'text-emerald-300 font-semibold drop-shadow-[0_0_6px_rgba(52,211,153,0.5)]' : atual ? 'text-emerald-200 font-semibold' : proxima ? 'text-emerald-300/80 font-medium' : 'text-atelie-textoMuted/50'}`}>
                           {etapa}
+                        </span>
+                        <span className={`text-[8px] font-mono px-1.5 py-0.5 rounded-full transition-all duration-500 ${feita ? 'bg-emerald-400/10 text-emerald-300/80 border border-emerald-400/15' : 'bg-atelie-superficie2 text-atelie-textoMuted/40 border border-atelie-borda/40'}`}>
+                          {[33, 67, 100][i]}%
                         </span>
                       </div>
                     );
