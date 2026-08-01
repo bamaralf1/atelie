@@ -95,6 +95,17 @@ function IconoEtapaMilestone({ etapa, className }: { etapa: string; className?: 
   );
 }
 
+const PARTICULAS = [
+  { l: '8%', t: '30%', w: '3px', s: 6, d: 0 },
+  { l: '16%', t: '62%', w: '2px', s: 8, d: 1.2 },
+  { l: '28%', t: '20%', w: '3px', s: 7, d: 0.6 },
+  { l: '42%', t: '70%', w: '2px', s: 9, d: 2 },
+  { l: '58%', t: '26%', w: '3px', s: 6.5, d: 0.3 },
+  { l: '72%', t: '64%', w: '2px', s: 8.5, d: 1.8 },
+  { l: '85%', t: '34%', w: '3px', s: 7.5, d: 0.9 },
+  { l: '92%', t: '72%', w: '2px', s: 9.5, d: 2.4 },
+];
+
 function useScrollReveal() {
   useEffect(() => {
     const obs = new IntersectionObserver(
@@ -140,6 +151,9 @@ export function ClienteView({
   const [secaoAtiva, setSecaoAtiva] = useState('progresso');
   const [mostrarNav, setMostrarNav] = useState(false);
   const [scrollY, setScrollY] = useState(0);
+  const [scrollProgresso, setScrollProgresso] = useState(0);
+  const [percentualExibido, setPercentualExibido] = useState(0);
+  const percentualRef = useRef<HTMLSpanElement>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
   const heroRef = useRef<HTMLDivElement>(null);
 
@@ -149,10 +163,36 @@ export function ClienteView({
     const handleScroll = () => {
       setMostrarNav(window.scrollY > 350);
       setScrollY(window.scrollY);
+      const total = document.documentElement.scrollHeight - window.innerHeight;
+      setScrollProgresso(total > 0 ? (window.scrollY / total) * 100 : 0);
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  useEffect(() => {
+    const el = percentualRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([e]) => {
+        if (!e.isIntersecting) return;
+        obs.disconnect();
+        const alvo = obra.percentual_conclusao;
+        const inicio = performance.now();
+        const dur = 1400;
+        const passo = (t: number) => {
+          const p = Math.min(1, (t - inicio) / dur);
+          const eased = 1 - Math.pow(1 - p, 3);
+          setPercentualExibido(Math.round(alvo * eased));
+          if (p < 1) requestAnimationFrame(passo);
+        };
+        requestAnimationFrame(passo);
+      },
+      { threshold: 0.5 }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [obra.percentual_conclusao]);
 
   useEffect(() => {
     observerRef.current = new IntersectionObserver(
@@ -212,7 +252,22 @@ export function ClienteView({
       <style>{`
         .reveal { opacity: 0; transform: translateY(30px); transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1); }
         .reveal-visible { opacity: 1; transform: translateY(0); }
+        @keyframes kenburns { 0% { transform: scale(1.05); } 100% { transform: scale(1.18); } }
+        @keyframes flutuar { 0%, 100% { transform: translateY(0) translateX(0); opacity: 0.35; } 50% { transform: translateY(-20px) translateX(5px); opacity: 0.9; } }
       `}</style>
+
+      {/* Barra de progresso de rolagem */}
+      <div className="fixed top-0 left-0 right-0 z-[60] h-[3px] pointer-events-none">
+        <div className="h-full rounded-r-full bg-gradient-to-r from-atelie-dourado to-atelie-douradoClaro shadow-[0_0_14px_rgba(198,161,91,0.8)]" style={{ width: `${scrollProgresso}%` }} />
+      </div>
+
+      {/* Grain cinematográfico */}
+      <div
+        className="pointer-events-none fixed inset-0 z-[45] opacity-[0.05] mix-blend-overlay"
+        style={{ backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='0.6'/></svg>")` }}
+      />
+      {/* Vinheta */}
+      <div className="pointer-events-none fixed inset-0 z-[45]" style={{ background: 'radial-gradient(ellipse at center, transparent 62%, rgba(0,0,0,0.4) 100%)' }} />
 
       <Celebracao ativo={obra.percentual_conclusao >= 100} />
 
@@ -265,7 +320,7 @@ export function ClienteView({
         {/* Background com parallax */}
         {bgImg ? (
           <div className="absolute inset-0" style={{ transform: `translateY(${heroBgY}px)` }}>
-            <img src={bgImg} alt="" className="w-full h-[120%] object-cover" />
+            <img src={bgImg} alt="" className="w-full h-[120%] object-cover animate-[kenburns_45s_ease-in-out_infinite_alternate]" />
             <div className="absolute inset-0 bg-gradient-to-t from-atelie-fundo via-atelie-fundo/70 to-atelie-fundo/40" />
             <div className="absolute inset-0 bg-gradient-to-r from-atelie-fundo/50 to-transparent" />
             <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-atelie-fundo" />
@@ -275,6 +330,20 @@ export function ClienteView({
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(198,161,91,0.06),transparent_60%)]" />
           </div>
         )}
+
+        {/* Glow dourado */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(198,161,91,0.12),transparent_55%)]" />
+
+        {/* Partículas douradas */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          {PARTICULAS.map((p, i) => (
+            <span
+              key={i}
+              className="absolute rounded-full bg-atelie-dourado/60 blur-[1px]"
+              style={{ left: p.l, top: p.t, width: p.w, height: p.w, animation: `flutuar ${p.s}s ease-in-out ${p.d}s infinite` }}
+            />
+          ))}
+        </div>
 
         {/* Anel decorativo */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full border border-atelie-dourado/5 pointer-events-none" style={{ opacity: heroOpacity }} />
@@ -328,7 +397,7 @@ export function ClienteView({
                 <p className="text-atelie-textoMuted text-sm mt-1">Acompanhe cada etapa da criação</p>
               </div>
               <div className="text-right">
-                <span className="font-display text-4xl sm:text-5xl gradient-text">{obra.percentual_conclusao}%</span>
+                <span ref={percentualRef} className="font-display text-4xl sm:text-5xl gradient-text">{percentualExibido}%</span>
                 <p className="text-[10px] uppercase tracking-wider text-atelie-textoMuted/60 mt-0.5">concluído</p>
               </div>
             </div>
@@ -601,7 +670,7 @@ export function ClienteView({
               </div>
               <div className="bg-gradient-to-r from-atelie-dourado/5 to-transparent px-5 sm:px-7 py-5 flex items-center justify-between border-t border-atelie-borda/50">
                 <span className="text-sm text-atelie-textoMuted">Total investido em materiais</span>
-                <span className="font-display text-xl gradient-text font-semibold">{formatarMoeda(totalMateriais)}</span>
+                <span className="font-display text-xl gradient-text font-semibold bg-[length:200%_100%] animate-shimmer">{formatarMoeda(totalMateriais)}</span>
               </div>
             </div>
           </section>
