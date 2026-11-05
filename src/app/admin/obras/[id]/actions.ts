@@ -1,8 +1,17 @@
 'use server';
 
 import { criarClientAdmin } from '@/lib/supabase/admin';
+import { enviarEmailAtualizacaoObra, AlteracaoObra } from '@/lib/email';
+import { formatarData } from '@/lib/utils';
 import { revalidatePath } from 'next/cache';
 import { v4 as uuidv4 } from 'uuid';
+
+/** Resume um texto longo para caber no e-mail de atualização. */
+function resumo(texto: string | null, limite = 140): string {
+  if (!texto) return '—';
+  const limpo = texto.replace(/\s+/g, ' ').trim();
+  return limpo.length > limite ? `${limpo.slice(0, limite)}…` : limpo;
+}
 
 async function apagarArquivoStorage(url: string | null) {
   if (!url) return;
@@ -31,11 +40,19 @@ export async function atualizarVisaoGeralAction(obraId: string, formData: FormDa
   const exibir_custos = formData.get('exibir_custos') === 'on';
   const titulo = (formData.get('titulo') as string)?.trim() || null;
   const orcamento_total = parseFloat((formData.get('orcamento_total') as string) || '0') || 0;
+  const valor_recebido = parseFloat((formData.get('valor_recebido') as string) || '0') || 0;
+  const desconto = parseFloat((formData.get('desconto') as string) || '0') || 0;
   const entrega_status = (formData.get('entrega_status') as string) || null;
   const rotulos = ((formData.get('rotulos') as string) || '')
     .split(',')
     .map((r) => r.trim())
     .filter(Boolean);
+
+  const { data: obraAntes } = await supabase
+    .from('obras')
+    .select('*')
+    .eq('id', obraId)
+    .single();
 
   const { error } = await supabase
     .from('obras')
@@ -48,12 +65,71 @@ export async function atualizarVisaoGeralAction(obraId: string, formData: FormDa
       exibir_custos,
       titulo,
       orcamento_total,
+      valor_recebido,
+      desconto,
       entrega_status,
       rotulos,
     })
     .eq('id', obraId);
 
   revalidatePath(`/admin/obras/${obraId}`);
+
+  if (!error && obraAntes) {
+    // Avisa o cliente apenas quando algo visível na página de acompanhamento mudou.
+    const alteracoes: AlteracaoObra[] = [];
+
+    if (status_atual !== obraAntes.status_atual) {
+      alteracoes.push({ rotulo: 'Status da obra', de: obraAntes.status_atual, para: status_atual });
+    }
+    if (percentual_conclusao !== obraAntes.percentual_conclusao) {
+      alteracoes.push({
+        rotulo: 'Percentual de conclusão',
+        de: `${obraAntes.percentual_conclusao}%`,
+        para: `${percentual_conclusao}%`,
+      });
+    }
+    if ((estimativa_conclusao ?? null) !== (obraAntes.estimativa_conclusao ?? null)) {
+      alteracoes.push({
+        rotulo: 'Estimativa de conclusão',
+        de: formatarData(obraAntes.estimativa_conclusao),
+        para: formatarData(estimativa_conclusao),
+      });
+    }
+    if ((entrega_status ?? null) !== (obraAntes.entrega_status ?? null)) {
+      alteracoes.push({
+        rotulo: 'Etapa de entrega',
+        de: obraAntes.entrega_status || 'Sem etapa',
+        para: entrega_status || 'Sem etapa',
+      });
+    }
+    if ((titulo ?? null) !== (obraAntes.titulo ?? null)) {
+      alteracoes.push({ rotulo: 'Título da obra', de: obraAntes.titulo, para: titulo });
+    }
+    if ((descricao ?? null) !== (obraAntes.descricao ?? null)) {
+      alteracoes.push({ rotulo: 'Descrição da obra', para: resumo(descricao) });
+    }
+    if ((observacoes ?? null) !== (obraAntes.observacoes ?? null)) {
+      alteracoes.push({ rotulo: 'Observações para o cliente', para: resumo(observacoes) });
+    }
+    const rotulosAntes = (obraAntes.rotulos ?? []).join(', ');
+    const rotulosDepois = rotulos.join(', ');
+    if (rotulosAntes !== rotulosDepois) {
+      alteracoes.push({ rotulo: 'Rótulos', de: rotulosAntes || '—', para: rotulosDepois || '—' });
+    }
+
+    if (alteracoes.length > 0) {
+      const { data: obraDepois } = await supabase
+        .from('obras')
+        .select('*')
+        .eq('id', obraId)
+        .single();
+
+      if (obraDepois) {
+        await enviarEmailAtualizacaoObra({ obra: obraDepois, alteracoes });
+      }
+    }
+  }
+
   return { erro: error?.message };
 }
 
@@ -195,6 +271,26 @@ export async function enviarFotoProgressoAction(obraId: string, formData: FormDa
   await supabase.from('obras').update({ imagem_obra_atual_url: publicUrl.publicUrl }).eq('id', obraId);
 
   revalidatePath(`/admin/obras/${obraId}`);
+
+  const { data: obra } = await supabase
+    .from('obras')
+    .select('*')
+    .eq('id', obraId)
+    .single();
+
+  if (obra) {
+    await enviarEmailAtualizacaoObra({
+      obra,
+      alteracoes: [
+        {
+          rotulo: 'Nova foto de progresso',
+          para: legenda || etapa || 'Publicada no acompanhamento',
+        },
+      ],
+      imagemUrl: publicUrl.publicUrl,
+    });
+  }
+
   return { erro: null };
 }
 

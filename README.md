@@ -93,6 +93,31 @@ Veja `.env.local.example`:
 | `SUPABASE_SERVICE_ROLE_KEY` | Chave de serviço (server-side apenas, nunca exposta ao browser) |
 | `ADMIN_PASSWORD` | Senha simples para proteger `/admin` |
 | `NEXT_PUBLIC_SITE_URL` | URL pública do site em produção, usada para montar o link de acompanhamento |
+| `GMAIL_USER` | Endereço Gmail que envia os avisos ao cliente (ex.: `brunoamaral.art.studio@gmail.com`) |
+| `GMAIL_APP_PASSWORD` | Senha de app do Gmail (nunca a senha normal da conta) |
+| `ATELIER_NOME` | Nome exibido como remetente (opcional, padrão `Atelier Bruno Amaral`) |
+| `EMAIL_RESPOSTA` | E-mail de resposta dos avisos (opcional, padrão `GMAIL_USER`) |
+
+### Notificações por e-mail ao cliente
+
+Sempre que a obra sofrer uma atualização visível no acompanhamento — status,
+percentual de conclusão, estimativa, etapa de entrega, título, descrição,
+observações, rótulos ou uma nova foto de progresso — o cliente cadastrado em
+`cliente_email` recebe automaticamente um e-mail com o resumo da mudança e o
+link exclusivo da obra. Se nada relevante mudou, nenhum e-mail é enviado.
+
+Para ativar:
+
+1. Ative a **verificação em duas etapas** na conta Google que fará os envios.
+2. Acesse <https://myaccount.google.com/apppasswords> e gere uma **senha de app**
+   (16 caracteres).
+3. Preencha `GMAIL_USER` com o endereço da conta e `GMAIL_APP_PASSWORD` com a
+   senha de app gerada.
+4. Reinicie o servidor (`npm run dev`) e, na Vercel, cadastre as mesmas
+   variáveis em **Settings > Environment Variables**.
+
+Sem essas variáveis o app continua funcionando normalmente; apenas o envio de
+e-mail fica desativado (o erro é registrado no console do servidor).
 
 ## 5. Deploy na Vercel
 
@@ -101,7 +126,8 @@ Veja `.env.local.example`:
    A Vercel detecta automaticamente o framework Next.js.
 3. Em **Environment Variables**, adicione as mesmas variáveis do `.env.local`
    (incluindo `SUPABASE_SERVICE_ROLE_KEY` — ela é usada apenas em Server
-   Actions/Components, nunca chega ao navegador).
+   Actions/Components, nunca chega ao navegador — e `GMAIL_USER` /
+   `GMAIL_APP_PASSWORD` para os avisos por e-mail).
 4. Configure `NEXT_PUBLIC_SITE_URL` com o domínio final (ex:
    `https://seu-projeto.vercel.app`), para que os links gerados na aba
    **Cliente** apontem para o endereço correto.
