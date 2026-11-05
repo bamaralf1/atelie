@@ -43,9 +43,29 @@ export function corDoStatus(status: StatusObra | string): string {
   return cores ? `${cores.bg} ${cores.text} ${cores.border}` : STATUS_CORES['Esboço'].bg + ' ' + STATUS_CORES['Esboço'].text + ' ' + STATUS_CORES['Esboço'].border;
 }
 
+/**
+ * Monta o link público de acompanhamento usado nos e-mails.
+ *
+ * Precisa devolver sempre uma URL absoluta: e-mail não resolve caminho
+ * relativo. Por isso há uma cadeia de fallbacks — inclusive as variáveis
+ * de sistema da Vercel, que existem mesmo quando NEXT_PUBLIC_SITE_URL
+ * não foi cadastrada no projeto.
+ */
 export function montarLinkAcompanhamento(token: string): string {
-  const base = process.env.NEXT_PUBLIC_SITE_URL || (typeof window !== 'undefined' ? window.location.origin : '');
-  return `${base}/acompanhar/${token}`;
+  const candidatas = [
+    process.env.NEXT_PUBLIC_SITE_URL,
+    process.env.VERCEL_PROJECT_PRODUCTION_URL
+      ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+      : null,
+    process.env.VERCEL_BRANCH_URL ? `https://${process.env.VERCEL_BRANCH_URL}` : null,
+    process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null,
+    typeof window !== 'undefined' ? window.location.origin : null,
+    'http://localhost:3000',
+  ].filter(Boolean) as string[];
+
+  const base = candidatas[0].replace(/\/+$/, '');
+  const comProtocolo = /^https?:\/\//i.test(base) ? base : `https://${base}`;
+  return `${comProtocolo}/acompanhar/${token}`;
 }
 
 export function calcularDiasRestantes(data: string | null): number | null {

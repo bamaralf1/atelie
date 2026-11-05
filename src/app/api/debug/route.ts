@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { carregarObras } from '@/lib/obras';
+import { montarLinkAcompanhamento } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
@@ -8,6 +9,7 @@ export async function GET() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 
   let painel: unknown = null;
+  let linkExemplo: string | null = null;
   try {
     const { obras, error, origem } = await carregarObras();
     painel = {
@@ -16,6 +18,7 @@ export async function GET() {
       total: obras?.length ?? 0,
       obras: (obras ?? []).map((o) => ({ id: o.id, titulo: o.titulo, status: o.status_atual })),
     };
+    if (obras && obras[0]) linkExemplo = montarLinkAcompanhamento(obras[0].token_acesso);
   } catch (e) {
     painel = { erro: e instanceof Error ? e.message : 'erro desconhecido' };
   }
@@ -31,6 +34,8 @@ export async function GET() {
     admin_password: process.env.ADMIN_PASSWORD ? '✓' : '❌ NÃO CONFIGURADO',
     gmail_user: process.env.GMAIL_USER ? '✓' : '❌ NÃO CONFIGURADO',
     gmail_app_password: process.env.GMAIL_APP_PASSWORD ? '✓' : '❌ NÃO CONFIGURADA',
+    site_url: process.env.NEXT_PUBLIC_SITE_URL || '❌ NÃO CONFIGURADA',
+    link_exemplo: linkExemplo,
     painel,
     vercel_url: process.env.VERCEL_URL || 'local',
     vercel_env: process.env.VERCEL_ENV || 'local',
