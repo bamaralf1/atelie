@@ -92,6 +92,26 @@ export default function NovaObraPage() {
               className="input-atelie"
             />
           </div>
+          <div className="col-span-2 sm:col-span-1">
+            <label className="block text-xs uppercase tracking-wide text-atelie-textoMuted mb-2">Valor recebido (R$)</label>
+            <input
+              name="valor_recebido"
+              type="number"
+              step="0.01"
+              placeholder="0,00"
+              className="input-atelie"
+            />
+          </div>
+          <div className="col-span-2 sm:col-span-1">
+            <label className="block text-xs uppercase tracking-wide text-atelie-textoMuted mb-2">Desconto (R$)</label>
+            <input
+              name="desconto"
+              type="number"
+              step="0.01"
+              placeholder="0,00"
+              className="input-atelie"
+            />
+          </div>
         </div>
 
         <div>

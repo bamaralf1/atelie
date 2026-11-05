@@ -17,6 +17,8 @@ export async function criarObraAction(formData: FormData) {
     const cliente_email = (formData.get('cliente_email') as string) || null;
     const descricao = (formData.get('descricao') as string) || null;
     const orcamento_total = parseFloat((formData.get('orcamento_total') as string) || '0') || 0;
+    const valor_recebido = parseFloat((formData.get('valor_recebido') as string) || '0') || 0;
+    const desconto = parseFloat((formData.get('desconto') as string) || '0') || 0;
     const estimativa_conclusao = (formData.get('estimativa_conclusao') as string) || null;
     const imagem = formData.get('imagem_referencia') as File | null;
 
@@ -50,6 +52,8 @@ export async function criarObraAction(formData: FormData) {
         cliente_email,
         descricao,
         orcamento_total,
+        valor_recebido,
+        desconto,
         estimativa_conclusao,
         imagem_referencia_url,
       })

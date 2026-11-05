@@ -222,6 +222,7 @@ export function ClienteView({
   }
 
   const totalMateriais = materiais.reduce((s, m) => s + m.quantidade * m.custo_unitario, 0);
+  const valorDevido = Math.max(0, (obra.orcamento_total || 0) - (obra.valor_recebido || 0) - (obra.desconto || 0));
 
   const milestones = [
     { label: 'Esboço', min: 0, desc: 'Linhas, composição e primeiras formas do desenho' },
@@ -772,6 +773,54 @@ export function ClienteView({
               <div className="bg-gradient-to-r from-atelie-dourado/5 to-transparent px-5 sm:px-7 py-5 flex items-center justify-between border-t border-atelie-borda/50">
                 <span className="text-sm text-atelie-textoMuted">Total investido em materiais</span>
                 <span className="font-display text-xl gradient-text font-semibold bg-[length:200%_100%] animate-shimmer">{formatarMoeda(totalMateriais)}</span>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* Financeiro */}
+        {obra.exibir_custos && (obra.orcamento_total ?? 0) > 0 && (
+          <section id="secao-financeiro" className="scroll-mt-24 reveal">
+            <div className="flex items-center gap-3 mb-1">
+              <span className="w-8 h-[3px] rounded-full bg-gradient-to-r from-emerald-400 to-teal-400 shadow-[0_0_8px_rgba(52,211,153,0.5)]" />
+              <h2 className="font-display text-2xl sm:text-3xl text-atelie-texto">Valores da obra</h2>
+            </div>
+            <p className="text-atelie-textoMuted text-sm mb-5">Acompanhe o que já foi pago e o saldo da encomenda</p>
+            <div className="relative bg-atelie-superficie/60 backdrop-blur-xl border border-atelie-borda/60 rounded-3xl overflow-hidden shadow-xl shadow-black/20 hover:border-emerald-400/30 transition-colors duration-500">
+              <div className="absolute -top-px left-8 right-8 h-px bg-gradient-to-r from-transparent via-emerald-400/30 to-transparent" />
+              <div className="p-6 sm:p-8 grid grid-cols-2 sm:grid-cols-3 gap-4">
+                <div>
+                  <p className="text-[10px] uppercase tracking-wider text-atelie-textoMuted/60 mb-1">Valor total</p>
+                  <p className="font-display text-lg sm:text-xl text-atelie-texto">{formatarMoeda(obra.orcamento_total)}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase tracking-wider text-atelie-textoMuted/60 mb-1">Já pago</p>
+                  <p className="font-display text-lg sm:text-xl text-emerald-300">{formatarMoeda(obra.valor_recebido || 0)}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase tracking-wider text-atelie-textoMuted/60 mb-1">Desconto</p>
+                  <p className="font-display text-lg sm:text-xl text-atelie-douradoClaro">{formatarMoeda(obra.desconto || 0)}</p>
+                </div>
+                <div className={`col-span-2 sm:col-span-3 rounded-2xl p-5 flex items-center justify-between border ${valorDevido > 0 ? 'bg-atelie-dourado/10 border-atelie-dourado/30' : 'bg-emerald-400/10 border-emerald-400/30'}`}>
+                  <div>
+                    <p className="text-[10px] uppercase tracking-wider text-atelie-textoMuted/60 mb-1">Valor a pagar</p>
+                    {valorDevido > 0 ? (
+                      <p className="font-display text-2xl gradient-text bg-[length:200%_100%] animate-shimmer">{formatarMoeda(valorDevido)}</p>
+                    ) : (
+                      <p className="font-display text-2xl text-emerald-300">{formatarMoeda(0)}</p>
+                    )}
+                  </div>
+                  {valorDevido === 0 ? (
+                    <span className="text-emerald-300 flex items-center gap-2">
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      <span className="text-sm">Obra quitada</span>
+                    </span>
+                  ) : (
+                    <span className="text-atelie-textoMuted/70 text-sm text-right max-w-[12rem]">Saldo restante da encomenda</span>
+                  )}
+                </div>
               </div>
             </div>
           </section>

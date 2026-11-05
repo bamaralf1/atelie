@@ -215,7 +215,7 @@ export async function enviarEmailAtualizacaoObra(
   }
 
   try {
-    await transporter.sendMail({
+    const info = await transporter.sendMail({
       from: `"${NOME_ATELIER}" <${process.env.GMAIL_USER}>`,
       to: obra.cliente_email,
       replyTo: process.env.EMAIL_RESPOSTA || process.env.GMAIL_USER,
@@ -223,10 +223,11 @@ export async function enviarEmailAtualizacaoObra(
       text: montarTexto(dados),
       html: montarHtml(dados),
     });
+    console.log(`[email] Atualização de "${obra.titulo}" enviada para ${obra.cliente_email} (${info.messageId})`);
     return { enviado: true };
   } catch (e) {
     const erro = e instanceof Error ? e.message : 'Falha ao enviar e-mail.';
-    console.error('[email] Falha ao enviar atualização da obra:', erro);
+    console.error(`[email] Falha ao enviar atualização de "${obra.titulo}" para ${obra.cliente_email}:`, erro);
     return { enviado: false, erro };
   }
 }

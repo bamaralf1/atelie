@@ -18,6 +18,8 @@ create table if not exists obras (
   percentual_conclusao int not null default 0 check (percentual_conclusao between 0 and 100),
   estimativa_conclusao date,
   orcamento_total numeric(12,2) default 0,
+  valor_recebido numeric(12,2) not null default 0,
+  desconto numeric(12,2) not null default 0,
   custo_materiais numeric(12,2) default 0,
   descricao text,
   observacoes text,
@@ -39,6 +41,8 @@ comment on column obras.entrega_status is
 -- Migração para bancos já existentes (idempotente)
 alter table obras add column if not exists entrega_status text;
 alter table obras add column if not exists rotulos text[] not null default '{}';
+alter table obras add column if not exists valor_recebido numeric(12,2) not null default 0;
+alter table obras add column if not exists desconto numeric(12,2) not null default 0;
 
 -- ---------------------------------------------------------
 -- Materiais utilizados em cada obra

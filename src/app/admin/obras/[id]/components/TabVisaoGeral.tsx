@@ -3,12 +3,16 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Obra, STATUS_OPCOES, StatusObra, ENTREGA_OPCOES } from '@/lib/types';
+import { formatarMoeda } from '@/lib/utils';
 import { atualizarVisaoGeralAction, atualizarReferenciaAction, excluirObraAction } from '../actions';
 
 export function TabVisaoGeral({ obra }: { obra: Obra }) {
   const [percentual, setPercentual] = useState(obra.percentual_conclusao);
   const [salvando, setSalvando] = useState(false);
   const [salvo, setSalvo] = useState(false);
+  const [avisoEmail, setAvisoEmail] = useState<string | null>(null);
+  const [emailEnviado, setEmailEnviado] = useState(false);
+  const [erroSalvar, setErroSalvar] = useState<string | null>(null);
   const [statusAtual, setStatusAtual] = useState(obra.status_atual);
   const [confirmarStatus, setConfirmarStatus] = useState<StatusObra | null>(null);
   const [salvandoReferencia, setSalvandoReferencia] = useState(false);
@@ -16,6 +20,8 @@ export function TabVisaoGeral({ obra }: { obra: Obra }) {
   const [confirmarExclusao, setConfirmarExclusao] = useState(false);
   const [excluindo, setExcluindo] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
+  // Guarda o status escolhido no modal para o submit não depender do timing do setState.
+  const statusPendente = useRef<StatusObra | null>(null);
   const router = useRouter();
 
   async function handleTrocarReferencia(formData: FormData) {
@@ -55,18 +61,26 @@ export function TabVisaoGeral({ obra }: { obra: Obra }) {
   }, [salvo]);
 
   async function handleSubmit(formData: FormData) {
-    const statusFinal = confirmarStatus ?? statusAtual;
-    if (confirmarStatus) {
-      formData.set('status_atual', confirmarStatus!);
-      setConfirmarStatus(null);
-    }
+    const statusFinal = statusPendente.current ?? statusAtual;
+    statusPendente.current = null;
+    formData.set('status_atual', statusFinal);
+    setConfirmarStatus(null);
     setSalvando(true);
     setSalvo(false);
+    setAvisoEmail(null);
+    setEmailEnviado(false);
+    setErroSalvar(null);
     formData.set('percentual_conclusao', String(percentual));
-    await atualizarVisaoGeralAction(obra.id, formData);
+    const r = await atualizarVisaoGeralAction(obra.id, formData);
     setStatusAtual(statusFinal);
     setSalvando(false);
     setSalvo(true);
+    if (r?.erro) {
+      setErroSalvar(r.erro);
+    } else {
+      if (r?.emailErro) setAvisoEmail(r.emailErro);
+      else if (r?.emailEnviado) setEmailEnviado(true);
+    }
   }
 
   function handleStatusChange(novo: StatusObra) {
@@ -121,6 +135,37 @@ export function TabVisaoGeral({ obra }: { obra: Obra }) {
               defaultValue={obra.orcamento_total || 0}
               className="input-atelie"
             />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs uppercase tracking-wide text-atelie-textoMuted mb-2">Valor recebido (R$)</label>
+            <input
+              name="valor_recebido"
+              type="number"
+              step="0.01"
+              min="0"
+              defaultValue={obra.valor_recebido || 0}
+              className="input-atelie"
+            />
+          </div>
+          <div>
+            <label className="block text-xs uppercase tracking-wide text-atelie-textoMuted mb-2">Desconto (R$)</label>
+            <input
+              name="desconto"
+              type="number"
+              step="0.01"
+              min="0"
+              defaultValue={obra.desconto || 0}
+              className="input-atelie"
+            />
+          </div>
+          <div className="col-span-1 sm:col-span-2 rounded-lg bg-atelie-fundo/50 border border-atelie-borda px-4 py-3 text-sm flex items-center justify-between">
+            <span className="text-atelie-textoMuted">A receber do cliente</span>
+            <span className="font-mono font-semibold text-atelie-douradoClaro">
+              {formatarMoeda(Math.max(0, (obra.orcamento_total || 0) - (obra.valor_recebido || 0) - (obra.desconto || 0)))}
+            </span>
           </div>
         </div>
 
@@ -268,6 +313,19 @@ export function TabVisaoGeral({ obra }: { obra: Obra }) {
               Salvo com sucesso.
             </span>
           )}
+          {emailEnviado && (
+            <span className="flex items-center gap-1 text-atelie-douradoClaro text-xs animate-fadeIn">
+              Cliente avisado por e-mail.
+            </span>
+          )}
+          {erroSalvar && (
+            <span className="text-atelie-terracotaClaro text-xs">Erro ao salvar: {erroSalvar}</span>
+          )}
+          {avisoEmail && (
+            <span className="text-atelie-terracotaClaro text-xs">
+              E-mail não enviado: {avisoEmail}
+            </span>
+          )}
           {statusModificado && (
             <span className="text-atelie-douradoClaro text-xs animate-fadeIn">
               Status alterado para <strong>{statusAtual}</strong>
@@ -301,6 +359,7 @@ export function TabVisaoGeral({ obra }: { obra: Obra }) {
               </button>
               <button
                 onClick={() => {
+                  statusPendente.current = confirmarStatus;
                   setStatusAtual(confirmarStatus);
                   setConfirmarStatus(null);
                   formRef.current?.requestSubmit();

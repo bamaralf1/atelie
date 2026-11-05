@@ -38,6 +38,8 @@ export interface Obra {
   percentual_conclusao: number;
   estimativa_conclusao: string | null;
   orcamento_total: number;
+  valor_recebido: number;
+  desconto: number;
   custo_materiais: number;
   descricao: string | null;
   observacoes: string | null;
@@ -99,6 +101,8 @@ export interface EstatisticasDashboard {
   emAndamento: number;
   concluidas: number;
   receitaTotal: number;
+  recebidoTotal: number;
+  aReceberTotal: number;
   custoTotal: number;
   porStatus: { status: string; quantidade: number }[];
 }

@@ -48,11 +48,13 @@ export async function atualizarVisaoGeralAction(obraId: string, formData: FormDa
     .map((r) => r.trim())
     .filter(Boolean);
 
-  const { data: obraAntes } = await supabase
+  const { data: obraAntes, error: erroLeitura } = await supabase
     .from('obras')
     .select('*')
     .eq('id', obraId)
     .single();
+
+  if (erroLeitura) console.error('[action] Falha ao ler obra:', erroLeitura.message);
 
   const { error } = await supabase
     .from('obras')
@@ -71,6 +73,8 @@ export async function atualizarVisaoGeralAction(obraId: string, formData: FormDa
       rotulos,
     })
     .eq('id', obraId);
+
+  console.log('[action] atualizarVisaoGeral', obraId, status_atual, `${percentual_conclusao}%`, error ? `ERRO: ${error.message}` : 'ok');
 
   revalidatePath(`/admin/obras/${obraId}`);
 
@@ -125,12 +129,17 @@ export async function atualizarVisaoGeralAction(obraId: string, formData: FormDa
         .single();
 
       if (obraDepois) {
-        await enviarEmailAtualizacaoObra({ obra: obraDepois, alteracoes });
+        const email = await enviarEmailAtualizacaoObra({ obra: obraDepois, alteracoes });
+        return {
+          erro: null,
+          emailEnviado: email.enviado,
+          emailErro: email.enviado ? null : email.erro ?? 'E-mail não enviado.',
+        };
       }
     }
   }
 
-  return { erro: error?.message };
+  return { erro: error?.message, emailEnviado: false, emailErro: null };
 }
 
 /** Edita nome e e-mail do cliente (aba "Cliente"). */

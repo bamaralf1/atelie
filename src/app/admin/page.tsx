@@ -16,6 +16,8 @@ async function semearObra() {
     status_atual: 'Pintura',
     percentual_conclusao: 45,
     orcamento_total: 4500,
+    valor_recebido: 1500,
+    desconto: 0,
     custo_materiais: 1200,
     descricao: 'Retrato em óleo sobre tela 60×80cm. Inspirado em fotografia de família dos anos 60. Tons terrosos e fundo neutro.',
     observacoes: 'Cliente prefere tons quentes. Referências enviadas por WhatsApp. Entregar com moldura clássica dourada.',
@@ -69,8 +71,10 @@ function calcularEstatisticas(obras: Obra[]): EstatisticasDashboard {
     total: obras.length,
     emAndamento: obras.filter((o) => o.status_atual !== 'Concluída').length,
     concluidas: obras.filter((o) => o.status_atual === 'Concluída').length,
-    receitaTotal: obras.reduce((s, o) => s + o.orcamento_total, 0),
-    custoTotal: obras.reduce((s, o) => s + o.custo_materiais, 0),
+    receitaTotal: obras.reduce((s, o) => s + (o.orcamento_total || 0), 0),
+    recebidoTotal: obras.reduce((s, o) => s + (o.valor_recebido || 0), 0),
+    aReceberTotal: obras.reduce((s, o) => s + Math.max(0, (o.orcamento_total || 0) - (o.valor_recebido || 0) - (o.desconto || 0)), 0),
+    custoTotal: obras.reduce((s, o) => s + (o.custo_materiais || 0), 0),
     porStatus: Array.from(
       obras.reduce((map, o) => map.set(o.status_atual, (map.get(o.status_atual) || 0) + 1), new Map<string, number>())
     ).map(([status, quantidade]) => ({ status, quantidade })),
@@ -157,7 +161,8 @@ export default async function DashboardAdmin() {
         <div className="bg-atelie-superficie border border-atelie-borda rounded-xl p-5">
           <p className="text-xs uppercase tracking-wide text-atelie-textoMuted mb-1">Receita</p>
           <p className="font-display text-2xl text-atelie-douradoClaro">{formatarMoeda(stats.receitaTotal)}</p>
-          <p className="text-xs text-atelie-textoMuted mt-1">Margem: <span className={+margemMedia >= 50 ? 'text-emerald-300' : +margemMedia >= 30 ? 'text-atelie-douradoClaro' : 'text-atelie-terracotaClaro'}>{margemMedia}%</span></p>
+          <p className="text-xs text-atelie-textoMuted mt-1">A receber: <span className="text-emerald-300">{formatarMoeda(stats.aReceberTotal)}</span></p>
+          <p className="text-xs text-atelie-textoMuted mt-1">Recebido: {formatarMoeda(stats.recebidoTotal)} · Margem: <span className={+margemMedia >= 50 ? 'text-emerald-300' : +margemMedia >= 30 ? 'text-atelie-douradoClaro' : 'text-atelie-terracotaClaro'}>{margemMedia}%</span></p>
         </div>
       </div>
 

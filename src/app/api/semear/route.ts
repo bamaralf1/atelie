@@ -8,6 +8,8 @@ const OBRA_EXEMPLO = {
   status_atual: 'Pintura' as const,
   percentual_conclusao: 45,
   orcamento_total: 4500,
+  valor_recebido: 1500,
+  desconto: 0,
   custo_materiais: 1200,
   descricao: 'Retrato em óleo sobre tela 60×80cm. Inspirado em fotografia de família dos anos 60. Tons terrosos e fundo neutro.',
   observacoes: 'Cliente prefere tons quentes. Referências enviadas por WhatsApp. Entregar com moldura clássica dourada.',
