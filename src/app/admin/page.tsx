@@ -1,70 +1,11 @@
-import { criarClientAdmin } from '@/lib/supabase/admin';
-import { criarClientServidor } from '@/lib/supabase/server';
 import { Obra, EstatisticasDashboard } from '@/lib/types';
+import { carregarObras } from '@/lib/obras';
 import { formatarMoeda, formatarData, formatarDiasRestantes, tempoRelativo } from '@/lib/utils';
 import { DashboardCliente } from './DashboardCliente';
 import { GridObras } from './GridObras';
 import EmptyState from './EmptyState';
 
 export const dynamic = 'force-dynamic';
-
-async function semearObra() {
-  const dados = {
-    titulo: 'Retrato em óleo — D. Maria',
-    cliente_nome: 'Maria Silva',
-    cliente_email: 'maria.silva@email.com',
-    status_atual: 'Pintura',
-    percentual_conclusao: 45,
-    orcamento_total: 4500,
-    valor_recebido: 1500,
-    desconto: 0,
-    custo_materiais: 1200,
-    descricao: 'Retrato em óleo sobre tela 60×80cm. Inspirado em fotografia de família dos anos 60. Tons terrosos e fundo neutro.',
-    observacoes: 'Cliente prefere tons quentes. Referências enviadas por WhatsApp. Entregar com moldura clássica dourada.',
-    exibir_custos: false,
-    estimativa_conclusao: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000).toISOString(),
-  };
-
-  for (const criar of [criarClientAdmin, criarClientServidor]) {
-    try {
-      const supabase = criar();
-      const { data } = await supabase
-        .from('obras')
-        .insert(dados)
-        .select()
-        .single();
-      if (data) return data as Obra;
-    } catch {
-      continue;
-    }
-  }
-  return null;
-}
-
-async function carregarObras(): Promise<{ obras: Obra[] | null; error: Error | null }> {
-  let supabase = criarClientAdmin();
-  let { data: obras, error } = await supabase
-    .from('obras')
-    .select('*')
-    .order('created_at', { ascending: false });
-
-  if (error) {
-    supabase = criarClientServidor();
-    const result = await supabase
-      .from('obras')
-      .select('*')
-      .order('created_at', { ascending: false });
-    obras = result.data;
-    error = result.error;
-  }
-
-  if (error) return { obras: null, error };
-  if (obras && obras.length === 0) {
-    const seed = await semearObra();
-    return { obras: seed ? [seed] : [], error: null };
-  }
-  return { obras: obras as Obra[], error: null };
-}
 
 function calcularEstatisticas(obras: Obra[]): EstatisticasDashboard {
   return {
@@ -105,7 +46,7 @@ function ErrorState({ message }: { message: string }) {
 
 
 export default async function DashboardAdmin() {
-  const { obras, error } = await carregarObras();
+  const { obras, error, origem } = await carregarObras();
 
   if (error) return <ErrorState message={error.message} />;
   if (!obras || obras.length === 0) return <EmptyState />;
@@ -120,7 +61,7 @@ export default async function DashboardAdmin() {
     .sort((a, b) => new Date(a.estimativa_conclusao!).getTime() - new Date(b.estimativa_conclusao!).getTime());
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8" data-origem={origem}>
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
