@@ -4,6 +4,7 @@ import { ClienteView } from './ClienteView';
 import { Obra, Material, HistoricoStatus, FotoProgresso, Comentario } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
 
 export default async function AcompanharObraPage({ params }: { params: { token: string } }) {
   const supabase = criarClientServidor();

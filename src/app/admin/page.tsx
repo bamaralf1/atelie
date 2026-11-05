@@ -6,6 +6,7 @@ import { GridObras } from './GridObras';
 import EmptyState from './EmptyState';
 
 export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
 
 function calcularEstatisticas(obras: Obra[]): EstatisticasDashboard {
   return {

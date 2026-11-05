@@ -8,6 +8,7 @@ import { Obra, Material, FotoProgresso } from '@/lib/types';
 import { formatarData, formatarMoeda } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
 
 async function buscarObraCompleta(id: string) {
   const tentativas = [criarClientAdmin, criarClientServidor];
